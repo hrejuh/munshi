@@ -178,6 +178,8 @@ assert.equal(wo.total, wo.subtotal + wo.feeCharged);
 assert.ok(wo.km > 0);
 for (const k of ["shop", "lines", "total", "status", "at", "mode", "fee", "feeCharged", "address", "phone"]) assert.ok(k in wo, k);
 assert.deepEqual([wo.source, wo.buyerName, wo.buyerPhone, wo.status, wo.note], ["web", "Meena <b>", "9845012345", "new", "ring twice"]);
+assert.deepEqual([wo.payment, wo.paid], ["cod", false], "no UPI ID on the shop: cash");
+assert.equal(order.payment, "cod", "telegram orders are cash");
 const alert = calls.slice(b3).find(c => c.url.endsWith("/sendMessage") && c.body.chat_id === OWNER);
 assert.ok(alert, "owner alerted");
 assert.match(alert.body.text, new RegExp(`New order #${placed.oid}.*web`));
@@ -197,7 +199,7 @@ for (const m of spText.matchAll(/<script>([\s\S]*?)<\/script>/g)) new Function(m
 assert.equal((await W(`/o/${placed.oid}?c=wrongcode`)).status, 404);
 assert.equal((await W(`/o/${placed.oid}`)).status, 404);
 assert.equal((await W(`/o/${oid}?c=`)).status, 404, "telegram orders have no status page");
-assert.deepEqual(await (await W(`/api/o/${placed.oid}?c=${placed.code}`)).json(), { status: "new" });
+assert.deepEqual(await (await W(`/api/o/${placed.oid}?c=${placed.code}`)).json(), { status: "new", paid: false });
 assert.equal((await W(`/api/o/${placed.oid}?c=nope`)).status, 404);
 
 // telegram: out for delivery -> completed, buyer told each time; invalid taps refused
@@ -244,12 +246,41 @@ ov = await (await OA(placed.oid, "complete")).json();
 assert.equal(JSON.parse(kv.get(`order:${placed.oid}`)).status, "completed");
 assert.equal(ov.cash, order.total + wo.total);
 assert.ok(!calls.slice(b4).some(c => c.url.endsWith("/sendMessage")), "web buyers have no Telegram chat");
-assert.deepEqual(await (await W(`/api/o/${placed.oid}?c=${placed.code}`)).json(), { status: "completed" });
+assert.deepEqual(await (await W(`/api/o/${placed.oid}?c=${placed.code}`)).json(), { status: "completed", paid: false });
 assert.match(await (await W(placed.url)).text(), /Completed/);
 ov = await (await OA(pick.oid, "decline")).json();
 assert.equal(JSON.parse(kv.get(`order:${pick.oid}`)).status, "declined");
 assert.equal((await (await OA(pick.oid, "accept")).json()).error.includes("declined"), true);
 assert.equal((await (await OA("99999", "accept")).json()).error, "Order not found.");
+
+// UPI: owner sets an ID, buyer picks UPI, status page links upi://pay, owner marks paid
+const sv = await (await W(`/api/m/${sid}${mq}`)).json();
+const saveShop = upi => W(`/api/m/${sid}${mq}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...sv, upi }) });
+assert.match((await (await saveShop("not-an-id")).json()).error, /name@bank/);
+assert.equal((await (await saveShop("ravi.stores@okaxis")).json()).shop.upi, "ravi.stores@okaxis");
+assert.match(await (await W(`/s/${sid}`)).text(), /Pay now by UPI/);
+const b5 = calls.length;
+const up = await (await order$({ ...base, payment: "upi" })).json();
+const uo = JSON.parse(kv.get(`order:${up.oid}`));
+assert.deepEqual([uo.payment, uo.paid, uo.upi], ["upi", false, "ravi.stores@okaxis"]);
+const ualert = calls.slice(b5).find(c => c.url.endsWith("/sendMessage") && c.body.chat_id === OWNER);
+assert.match(ualert.body.text, /by UPI/);
+assert.ok(ualert.body.reply_markup.inline_keyboard.flat().some(b => b.callback_data === `paid:${up.oid}`), "mark paid on telegram");
+let ust = await (await W(up.url)).text();
+assert.ok(ust.includes(`upi://pay?pa=ravi.stores%40okaxis&amp;pn=Ravi%20Stores&amp;am=${uo.total.toFixed(2)}&amp;cu=INR&amp;tn=Order%20${up.oid}`), "upi link");
+assert.match(ust, /Unpaid/);
+assert.match(ust, /can't confirm UPI payments automatically; the shop confirms/);
+assert.match(ust, /aria-label="QR code"/);
+assert.equal((await (await OA(placed.oid, "paid")).json()).error, "Only UPI orders can be marked paid.");
+ov = await (await W(`/api/m/${sid}/orders${mq}`)).json();
+assert.ok(ov.orders.find(o => o.oid === up.oid).actions.includes("paid"));
+await post(cb(OWNER, `paid:${up.oid}`));
+assert.equal(JSON.parse(kv.get(`order:${up.oid}`)).paid, true);
+assert.ok(kb().includes("home") && !kb().includes(`paid:${up.oid}`));
+assert.deepEqual(await (await W(`/api/o/${up.oid}?c=${up.code}`)).json(), { status: "new", paid: true });
+ust = await (await W(up.url)).text();
+assert.match(ust, /Paid by UPI/);
+assert.ok(!ust.includes("upi://"), "no pay button once paid");
 
 console.log = origLog;
 assert.deepEqual(errors, [], "no errors logged");

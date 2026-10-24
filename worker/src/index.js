@@ -831,7 +831,7 @@ async function placeOrder(c, chat, s, phone) {
   const oid = await newOrderId(c);
   const order = { shop: sid, buyer: chat, lines: lines.map(([it, q]) => [iname(it), q, it.price]),
     ...priceOrder(shop, lines, mode, s.loc), mode, loc: s.loc || null,
-    address: s.address || "", phone, status: "new", at: now() };
+    address: s.address || "", phone, status: "new", at: now(), payment: "cod", paid: false };
   c.st.set(`order:${oid}`, order);
   await addToIndex(c, "index:orders", oid);
   Object.assign(s, { cart: {}, step: null, mode: null, loc: null });
@@ -870,7 +870,7 @@ async function notifyOwner(c, oid, o, shop) {
   const who = [o.buyerName, o.address].filter(Boolean).join(", ");
   return send(c, shop.owner, `🔔 <b>New order #${oid}</b> · ${o.mode === "delivery" ? "🛵 delivery" : "🏃 pickup"}${o.source === "web" ? " · 🌐 web" : ""}\n\n${orderBody(o)}` +
     (o.mode === "delivery" && !o.feeCharged ? `\n(you absorb ${rs(o.fee)} delivery)` : "") +
-    `\n<b>Collect ${rs(o.total)}</b>\n\n🙋 ${h(who)}\n📞 ${h(o.phone)}` + (o.note ? `\n📝 ${h(o.note)}` : "") +
+    (o.payment === "upi" ? `\n💸 <b>${rs(o.total)} by UPI</b> · check your UPI app, then tap Mark paid` : `\n<b>Collect ${rs(o.total)}</b>`) + `\n\n🙋 ${h(who)}\n📞 ${h(o.phone)}` + (o.note ? `\n📝 ${h(o.note)}` : "") +
     (o.loc ? `\n🗺 https://maps.google.com/?q=${o.loc[0]},${o.loc[1]}` : ""),
     ownerButtons(oid, o));
 }
@@ -887,6 +887,24 @@ const outLabel = o => (o.mode === "pickup" ? "Ready for pickup" : "Out for deliv
 const STATUS_LABEL = { new: "New", accepted: "Accepted", out: "Out", completed: "Completed", declined: "Declined" };
 
 function ownerButtons(oid, o) {
+  const rows = statusButtons(oid, o);
+  if (o.payment === "upi" && o.status !== "declined")
+    rows.push([o.paid ? { text: "✓ UPI paid", callback_data: "home" } : { text: "💸 Mark paid", callback_data: `paid:${oid}` }]);
+  return rows;
+}
+
+async function markPaid(c, sid, oid) {
+  const o = await getOrder(c, oid);
+  if (!o || o.shop !== sid) return { error: "Order not found." };
+  if (o.payment !== "upi" || o.status === "declined") return { error: "Only UPI orders can be marked paid.", order: o };
+  o.paid = true;
+  o.paidAt = now();
+  await save(c);
+  console.log(`ORDER ${oid} paid`);
+  return { order: o };
+}
+
+function statusButtons(oid, o) {
   if (o.status === "new") return [[{ text: "✅ Accept", callback_data: `ok:${oid}` }, { text: "✖ Can't", callback_data: `no:${oid}` }]];
   if (o.status === "declined") return [[{ text: "✖ Declined", callback_data: "home" }]];
   if (o.status === "completed") return [[{ text: "✔ Completed", callback_data: "home" }]];
@@ -966,9 +984,10 @@ async function orderApi(req, env, sid) {
   if (mode === "delivery" && address.length < 4) return json({ error: "Please add your delivery address." }, 400);
   c.bot = await botName(c);
   const oid = await newOrderId(c), code = randCode();
+  const payment = b.payment === "upi" && shop.upi ? "upi" : "cod";
   const order = { shop: sid, buyer: null, lines: lines.map(([it, q]) => [iname(it), q, it.price]),
     ...price, mode, loc, address, phone, status: "new", at: now(),
-    source: "web", buyerName: name, buyerPhone: phone, note, code };
+    source: "web", buyerName: name, buyerPhone: phone, note, code, payment, paid: false, ...(payment === "upi" ? { upi: shop.upi } : {}) };
   c.st.set(`order:${oid}`, order);
   await addToIndex(c, "index:orders", oid);
   await save(c);
@@ -1124,13 +1143,13 @@ async function onCallback(c, q) {
     await save(c);
     return tg(c, "editMessageReplyMarkup", { chat_id: chat, message_id: mid, reply_markup: catalogueMarkup(sid, shop, cart) });
   }
-  if (["ok", "no", "out", "done"].includes(kind)) {
+  if (["ok", "no", "out", "done", "paid"].includes(kind)) {
     const oid = rest[0];
     const o = await getOrder(c, oid);
     if (!o) return;
     const sh = await getShop(c, o.shop);
     if (!sh || String(sh.owner) !== String(chat)) return;
-    const r = await setStatus(c, o.shop, oid, { ok: "accept", no: "decline", out: "out", done: "complete" }[kind]);
+    const r = kind === "paid" ? await markPaid(c, o.shop, oid) : await setStatus(c, o.shop, oid, { ok: "accept", no: "decline", out: "out", done: "complete" }[kind]);
     if (r.order) await tg(c, "editMessageReplyMarkup", { chat_id: chat, message_id: mid, reply_markup: { inline_keyboard: ownerButtons(oid, r.order) } });
     if (r.error) await send(c, chat, h(r.error));
     return;
@@ -1220,6 +1239,7 @@ const SHOP_CSS = FORM_CSS + `
 .steps li{display:flex;gap:12px;align-items:center;color:var(--soft)}
 .steps li i{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);flex:none;font-style:normal;font-size:13px;display:grid;place-items:center}
 .steps li.d{color:var(--ink);font-weight:600}.steps li.d i{background:var(--acc);border-color:var(--acc);color:#1d1206}
+@media (pointer:coarse){.upiqr{display:none}}
 .note{margin-top:18px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px}
 [hidden]{display:none!important}
 `;
@@ -1255,18 +1275,19 @@ async function webPage(env, sid) {
 <section id="co" hidden><a class="alt" href="#" id="back" style="text-align:left;margin:0">← back</a><h1>Your order</h1>
 <div class="list" id="lines"></div>
 <div class="seg"><button type="button" data-m="delivery" class="on">🛵 Delivery</button><button type="button" data-m="pickup">🏃 Pickup</button></div>
+${sh.upi ? `<div class="seg" id="pay"><button type="button" data-p="upi">Pay now by UPI</button><button type="button" data-p="cod" class="on" id="cod">Cash on delivery</button></div>` : ""}
 <div class="f"><label>name</label><input id="bn" maxlength="60" autocomplete="name">
 <label>phone</label><input id="bp" maxlength="15" inputmode="tel" autocomplete="tel">
 <div id="dl" class="f" style="margin:0"><label>delivery address</label><textarea id="ba" maxlength="200" rows="2" autocomplete="street-address"></textarea>
 <button type="button" class="add" id="gl">📍 use my location</button></div>
 <label>note for the shop</label><input id="bt" maxlength="200" placeholder="optional"></div>
 <div class="tot" id="tot"></div><p class="err" id="err"></p>
-<p class="sub" style="text-align:center;margin-top:8px">Pay cash on delivery or pickup</p></section>
+<p class="sub" style="text-align:center;margin-top:8px" id="paynote">Pay cash on delivery or pickup</p></section>
 <a class="go" id="bar" href="#" hidden></a>
 <script>
 const SID = ${jsonForScript(sid)}, ITEMS = ${jsonForScript(items.map(it => ({ n: it.name, l: iname(it), p: it.price })))}, KEY = "munshi-cart-" + SID;
 const $ = id => document.getElementById(id), rs = n => "₹" + Number(n).toLocaleString("en-IN", { maximumFractionDigits: 2 });
-let cart = {}, mode = "delivery", loc = null, quote = null, busy = false, qseq = 0;
+let cart = {}, mode = "delivery", pay = "cod", loc = null, quote = null, busy = false, qseq = 0;
 try { cart = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch {}
 for (const k in cart) if (!ITEMS[k] || ITEMS[k].n !== cart[k].n || !(cart[k].q > 0)) delete cart[k];
 try { const b = JSON.parse(localStorage.getItem("munshi-buyer") || "{}"); $("bn").value = b.n || ""; $("bp").value = b.p || ""; $("ba").value = b.a || ""; } catch {}
@@ -1294,14 +1315,17 @@ function paint() {
     $("lines").appendChild(d);
   }
   $("dl").hidden = mode !== "delivery";
-  document.querySelectorAll(".seg button").forEach(b => b.classList.toggle("on", b.dataset.m === mode));
+  document.querySelectorAll(".seg button[data-m]").forEach(b => b.classList.toggle("on", b.dataset.m === mode));
+  document.querySelectorAll(".seg button[data-p]").forEach(b => b.classList.toggle("on", b.dataset.p === pay));
+  if ($("cod")) $("cod").textContent = mode === "pickup" ? "Cash at pickup" : "Cash on delivery";
+  $("paynote").textContent = pay === "upi" ? "You'll get a UPI pay button after you place the order" : "Pay cash on delivery or pickup";
   const t = quote || { subtotal: sub(), feeCharged: 0, total: sub() };
   $("tot").innerHTML = "<div><span>items</span><span>" + rs(t.subtotal) + "</span></div>" +
     (mode === "delivery" ? "<div><span>delivery" + (t.km != null ? " · " + t.km.toFixed(1) + " km" : "") + "</span><span>" + (t.feeCharged ? rs(t.feeCharged) : "free") + "</span></div>" : "") +
     "<div><span>total</span><span>" + rs(t.total) + "</span></div>";
 }
 function body(extra) {
-  return JSON.stringify(Object.assign({ lines: Object.entries(cart).map(([i, x]) => ({ i: +i, name: x.n, q: x.q })), mode, loc,
+  return JSON.stringify(Object.assign({ lines: Object.entries(cart).map(([i, x]) => ({ i: +i, name: x.n, q: x.q })), mode, loc, payment: pay,
     name: $("bn").value, phone: $("bp").value, address: $("ba").value, note: $("bt").value }, extra));
 }
 const post = async extra => (await fetch("/api/order/" + encodeURIComponent(SID), { method: "POST", headers: { "content-type": "application/json" }, body: body(extra) })).json();
@@ -1323,7 +1347,8 @@ async function place() {
 $("bar").onclick = e => { e.preventDefault(); if (inCo()) place(); else location.hash = "checkout"; };
 $("back").onclick = e => { e.preventDefault(); history.back(); };
 window.onhashchange = () => { scrollTo(0, 0); if (inCo()) requote(); else paint(); };
-document.querySelectorAll(".seg button").forEach(b => b.onclick = () => { mode = b.dataset.m; requote(); });
+document.querySelectorAll(".seg button[data-m]").forEach(b => b.onclick = () => { mode = b.dataset.m; requote(); });
+document.querySelectorAll(".seg button[data-p]").forEach(b => b.onclick = () => { pay = b.dataset.p; paint(); });
 $("gl").onclick = () => {
   if (!navigator.geolocation) return;
   $("gl").textContent = "📍 finding you…";
@@ -1344,23 +1369,34 @@ async function statusRoute(env, url) {
     return api ? Response.json({ error: "not found" }, { status: 404, headers: { "cache-control": "no-store" } })
       : pageHtml("Not found", `<span class="mark"><i></i>munshi</span><h1>Order not found</h1>`, { status: 404, cache: "no-store" });
   }
-  if (api) return Response.json({ status: o.status }, { headers: { "cache-control": "no-store" } });
+  if (api) return Response.json({ status: o.status, paid: !!o.paid }, { headers: { "cache-control": "no-store" } });
   const sh = (await getShop(c, o.shop)) || {};
   const dlv = o.mode === "delivery";
   const steps = [["new", "Order placed"], ["accepted", "Accepted by the shop"], ["out", dlv ? "Out for delivery" : "Ready for pickup"], ["completed", "Completed"]];
   const at = Math.max(0, steps.findIndex(x => x[0] === o.status));
-  const live = !["completed", "declined"].includes(o.status);
+  const upi = o.payment === "upi" && o.status !== "declined";
+  const live = o.status !== "declined" && (o.status !== "completed" || (upi && !o.paid));
+  let payBox = "";
+  if (upi && o.paid) payBox = `<p class="note">✓ Paid by UPI · ${rs(o.total)}</p>`;
+  else if (upi) {
+    const link = upiLink(o, oid, sh.shopName);
+    payBox = `<p class="note"><b>Unpaid</b> · ${rs(o.total)} by UPI to ${h(o.upi)}</p>
+<a class="go" style="position:static;margin-top:12px" href="${h(link)}">Pay ${rs(o.total)}</a>
+<div class="upiqr" style="text-align:center;margin-top:14px">${qrSvg(link, 200)}<p class="sub">or scan with any UPI app</p></div>
+<p class="sub" style="margin-top:10px">We can't confirm UPI payments automatically; the shop confirms.</p>`;
+  }
   const track = o.status === "declined" ? `<p class="note">✖ The shop couldn't take this order.${sh.phone ? " Please call them." : ""}</p>`
     : `<ol class="steps">${steps.map(([, label], i) => `<li class="${i <= at ? "d" : ""}"><i>${i <= at ? "✓" : ""}</i>${label}</li>`).join("")}</ol>`;
   const lines = o.lines.map(([n, q, p]) => `<div><span>${q} × ${h(n)}</span><span>${rs(p * q)}</span></div>`).join("");
   return pageHtml(`Order #${oid}`, `<a class="mark" href="/s/${encodeURIComponent(o.shop)}" style="text-decoration:none"><i></i>${h(sh.shopName || "munshi")}</a>
-<h1>Order #${h(oid)}</h1><p class="sub">${dlv ? "🛵 Delivery" : "🏃 Pickup from shop"}${live ? ` · pay ${rs(o.total)} cash ${dlv ? "on delivery" : "at pickup"}` : ""}</p>
+<h1>Order #${h(oid)}</h1><p class="sub">${dlv ? "🛵 Delivery" : "🏃 Pickup from shop"}${live && !upi ? ` · pay ${rs(o.total)} cash ${dlv ? "on delivery" : "at pickup"}` : ""}</p>
+${payBox}
 ${track}
 <div class="tot">${lines}${dlv ? `<div><span>delivery</span><span>${o.feeCharged ? rs(o.feeCharged) : "free"}</span></div>` : ""}<div><span>total</span><span>${rs(o.total)}</span></div></div>
 ${sh.phone ? `<a class="alt" href="tel:${h(sh.phone)}">📞 call the shop</a>` : ""}
 <a class="alt" href="/s/${encodeURIComponent(o.shop)}">back to the shop</a>
-${live ? `<script>const S0 = ${jsonForScript(o.status)};
-const t = setInterval(async () => { try { const r = await (await fetch("/api/o/${h(oid)}" + location.search, { cache: "no-store" })).json(); if (r.status && r.status !== S0) { clearInterval(t); location.reload(); } } catch {} }, 10000);</script>` : ""}`,
+${live ? `<script>const S0 = ${jsonForScript(o.status)}, P0 = ${o.paid ? "true" : "false"};
+const t = setInterval(async () => { try { const r = await (await fetch("/api/o/${h(oid)}" + location.search, { cache: "no-store" })).json(); if (r.status && (r.status !== S0 || r.paid !== P0)) { clearInterval(t); location.reload(); } } catch {} }, 10000);</script>` : ""}`,
     { css: SHOP_CSS, cache: "no-store" });
 }
 
@@ -1401,7 +1437,10 @@ async function sttBlob(env, buf, mime) {
   return ((await r.json()).text || "").replace(/\[[^\]]*\]|\([^)]*\)/g, " ").replace(/\s+/g, " ").trim();
 }
 
-const shopView = sh => ({ shopName: sh.shopName || "", area: sh.area || "", phone: sh.phone || "", items: sh.items || [] });
+const shopView = sh => ({ shopName: sh.shopName || "", area: sh.area || "", phone: sh.phone || "", upi: sh.upi || "", items: sh.items || [] });
+const UPI_RE = /^[a-zA-Z0-9._-]{2,64}@[a-zA-Z][a-zA-Z0-9]{1,63}$/;
+const upiLink = (o, oid, shopName) => `upi://pay?pa=${encodeURIComponent(o.upi)}&pn=${encodeURIComponent(shopName || "Shop")}` +
+  `&am=${Number(o.total).toFixed(2)}&cu=INR&tn=${encodeURIComponent("Order " + oid)}`;
 
 async function manageRoute(req, env, url, ctx) {
   const parts = url.pathname.split("/").filter(Boolean); // ["m", sid] or ["api","m",sid,(voice)]
@@ -1424,7 +1463,8 @@ async function manageRoute(req, env, url, ctx) {
     if (req.method === "POST" && parts[4]) {
       let b = {};
       try { b = await req.json(); } catch {}
-      const r = await setStatus(c, sid, parts[4], String((b && b.action) || ""));
+      const action = String((b && b.action) || "");
+      const r = action === "paid" ? await markPaid(c, sid, parts[4]) : await setStatus(c, sid, parts[4], action);
       if (r.error) return json({ error: r.error, ...(await ordersView(c, sid)) });
       return json({ ok: true, ...(await ordersView(c, sid)) });
     }
@@ -1466,6 +1506,9 @@ async function manageRoute(req, env, url, ctx) {
     shop.shopName = name;
     shop.area = String(b.area || "").trim().slice(0, 80);
     shop.phone = String(b.phone || "").replace(/[^\d+ ]/g, "").slice(0, 16);
+    const upi = String(b.upi || "").trim();
+    if (upi && !UPI_RE.test(upi)) return json({ error: "UPI ID should look like name@bank." });
+    shop.upi = upi;
     shop.items = items;
     await save(c);
     ctx.waitUntil(publishPage(c, sid));
@@ -1484,7 +1527,9 @@ async function ordersView(c, sid) {
       oid, when: d(o.at), status: o.status, mode: o.mode || "delivery", total: o.total, source: o.source || "telegram",
       lines: o.lines.map(([n, q]) => `${q}× ${n}`).join(", "), who: [o.buyerName, o.address].filter(Boolean).join(", "),
       phone: o.phone || "", note: o.note || "",
-      actions: Object.entries(FLOW).filter(([, r]) => r.from.includes(o.status)).map(([a]) => a),
+      payment: o.payment || "cod", paid: !!o.paid,
+      actions: Object.entries(FLOW).filter(([, r]) => r.from.includes(o.status)).map(([a]) => a)
+        .concat(o.payment === "upi" && !o.paid && o.status !== "declined" ? ["paid"] : []),
     })),
   };
 }
@@ -1522,7 +1567,7 @@ h2{font-size:20px;margin:26px 0 0}
   return new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${h(shop.shopName)} · manage</title><style>${css}</style></head><body><main>
 <div class="top"><span class="mark"><i></i>munshi</span><a href="/s/${encodeURIComponent(sid)}" target="_blank">public page ↗</a></div>
-<div class="f"><label>shop name</label><input id="n"><label>area</label><input id="a"><label>phone</label><input id="p" inputmode="tel"></div>
+<div class="f"><label>shop name</label><input id="n"><label>area</label><input id="a"><label>phone</label><input id="p" inputmode="tel"><label>UPI ID (optional, for online payment)</label><input id="u" placeholder="name@bank" autocapitalize="off"></div>
 <div class="say" id="say"></div>
 <h2>Share your shop</h2>
 <div class="share">${qrSvg(webLink(shop, sid))}<div class="sb">
@@ -1550,11 +1595,11 @@ function row(it, i) {
   return d;
 }
 function render() {
-  $("n").value = S.shopName; $("a").value = S.area; $("p").value = S.phone;
+  $("n").value = S.shopName; $("a").value = S.area; $("p").value = S.phone; $("u").value = S.upi || "";
   const box = $("items"); box.innerHTML = ""; S.items.forEach((it, i) => box.appendChild(row(it, i)));
 }
 function dirty() { $("save").textContent = "Save"; }
-["n","a","p"].forEach((id, j) => $(id).oninput = e => { S[["shopName","area","phone"][j]] = e.target.value; dirty(); });
+["n","a","p","u"].forEach((id, j) => $(id).oninput = e => { S[["shopName","area","phone","upi"][j]] = e.target.value; dirty(); });
 $("addb").onclick = () => { S.items.push({ name: "", local: "", price: "", unit: "" }); render(); dirty(); $("items").lastChild.querySelector("input").focus(); };
 $("save").onclick = async () => {
   $("save").textContent = "Saving…";
@@ -1571,7 +1616,7 @@ $("tc").onchange = async () => {
   show("Added " + r.items.length + ". Check the prices, then Save.");
 };
 const OAPI = API.replace("?", "/orders?"), ST = { new: "🟡 new", accepted: "✅ accepted", out: "🛵 out", completed: "✔ completed", declined: "✖ declined" };
-const ACT = { accept: "Accept", decline: "Decline", out: "Out for delivery", complete: "Completed" };
+const ACT = { accept: "Accept", decline: "Decline", out: "Out for delivery", complete: "Completed", paid: "Mark paid" };
 const money = n => "₹" + Number(n).toLocaleString("en-IN", { maximumFractionDigits: 2 });
 function orders(r) {
   if (r.error) show(esc(r.error));
@@ -1583,7 +1628,7 @@ function orders(r) {
     d.innerHTML = '<div class="hd"><b></b><span></span></div><small class="l"></small><small class="w"></small><div class="acts"></div>';
     d.querySelector("b").textContent = "#" + o.oid + " · " + money(o.total);
     d.querySelector(".hd span").textContent = (ST[o.status] || o.status) + (o.status === "out" && o.mode === "pickup" ? " (ready)" : "");
-    d.querySelector(".l").textContent = o.when + " · " + (o.mode === "pickup" ? "pickup" : "delivery") + (o.source === "web" ? " · web" : "") + " · " + o.lines;
+    d.querySelector(".l").textContent = o.when + " · " + (o.mode === "pickup" ? "pickup" : "delivery") + (o.source === "web" ? " · web" : "") + (o.payment === "upi" ? (o.paid ? " · UPI paid ✓" : " · UPI unpaid") : "") + " · " + o.lines;
     d.querySelector(".w").textContent = [o.who, o.phone, o.note && "“" + o.note + "”"].filter(Boolean).join(" · ");
     for (const a of o.actions) {
       const b = document.createElement("button"); b.textContent = a === "out" && o.mode === "pickup" ? "Ready for pickup" : ACT[a];
