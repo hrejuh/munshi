@@ -64,7 +64,7 @@ const cb = (chat, data) => ({ callback_query: { id: "q", data, message: { messag
 const sent = () => calls.filter(c => c.url.endsWith("/sendMessage")).map(c => c.body.text);
 
 // routes
-assert.equal(await (await worker.fetch(new Request("https://x.dev/"), env, {})).text(), "Munshi is running");
+assert.equal((await (await worker.fetch(new Request("https://x.dev/"), env, {})).text()).includes("Shops on Munshi"), true);
 assert.equal((await post(msg(OWNER, { text: "/start" }), "wrong")).status, 403);
 
 // onboarding by text

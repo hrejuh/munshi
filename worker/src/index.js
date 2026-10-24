@@ -36,7 +36,8 @@ export default {
       // never echo the webhook url back: it contains the secret
       return Response.json({ setWebhook: { ok: hook.ok, description: hook.description }, setMyCommands: { ok: cmds.ok, description: cmds.description } });
     }
-    if (req.method === "GET" && url.pathname === "/") return new Response("Munshi is running");
+    if (req.method === "GET" && (url.pathname === "/" || url.pathname.startsWith("/s/")))
+      return webPage(env, url.pathname === "/" ? null : decodeURIComponent(url.pathname.slice(3)));
     return new Response("not found", { status: 404 });
   },
 };
@@ -173,7 +174,8 @@ function h(s) {
 }
 
 const shopLink = (c, sid) => `https://t.me/${c.bot}?start=s_${sid}`;
-const webLink = shop => (shop && shop.page) || "";
+const PUBLIC_URL = "https://munshi.hrejuh.workers.dev";
+const webLink = (shop, sid) => (shop && sid) ? `${PUBLIC_URL}/s/${sid}` : "";
 const iname = it => it.local || it.name;
 const now = () => Date.now() / 1000;
 const pad = n => String(n).padStart(2, "0");
@@ -499,7 +501,7 @@ async function finishOnboarding(c, chat) {
   const link = shopLink(c, sid);
   await send(c, chat, `🎉 <b>${h(d.shopName)} is open</b>\n\nSend this to customers:\n${link}`,
     [[{ text: "📤 Share on Telegram", url: `https://t.me/share/url?url=${link}` }]]
-      .concat(webLink(shop) ? [[{ text: "🌐 Public page", url: webLink(shop) }]] : []),
+      .concat(webLink(shop, sid) ? [[{ text: "🌐 Public page", url: webLink(shop, sid) }]] : []),
     { speak: `${d.shopName} is open.` });
   return dashboard(c, chat);
 }
@@ -526,11 +528,11 @@ async function shareCatalogue(c, chat) {
   const [sid, shop] = await myShop(c, chat);
   if (!shop) return;
   const card = catalogueCard(shop);
-  const links = `\n\nOrder: ${shopLink(c, sid)}` + (webLink(shop) ? `\nMenu: ${webLink(shop)}` : "");
+  const links = `\n\nOrder: ${shopLink(c, sid)}` + (webLink(shop, sid) ? `\nMenu: ${webLink(shop, sid)}` : "");
   const q = encodeURIComponent;
   await tg(c, "sendMessage", { chat_id: chat, text: card + "\n\n👇 Tap to order", disable_web_page_preview: true,
     reply_markup: { inline_keyboard: [[{ text: "🛒 Order now", url: shopLink(c, sid) }]]
-      .concat(webLink(shop) ? [[{ text: "🌐 See full menu", url: webLink(shop) }]] : []) } });
+      .concat(webLink(shop, sid) ? [[{ text: "🌐 See full menu", url: webLink(shop, sid) }]] : []) } });
   return send(c, chat, "☝️ Forward that card to your customer groups.\nOr send it on WhatsApp:",
     [[{ text: "🟢 Share on WhatsApp", url: "https://wa.me/?text=" + q(card + links) }],
      [{ text: "✈️ Share on Telegram", url: "https://t.me/share/url?url=" + q(shopLink(c, sid)) + "&text=" + q(card) }],
@@ -999,4 +1001,49 @@ async function publishPage(c, sid) {
   } catch (e) {
     console.log("TPH", e && e.stack || e);
   }
+}
+
+// ---------- public web pages ----------
+
+const PAGE_CSS = `
+:root{--bg:#fbf6ec;--card:#fff;--ink:#2a1d12;--soft:#7a6a58;--line:#eadfcc;--acc:#e8890c;--acc2:#c56f00}
+@media (prefers-color-scheme:dark){:root{--bg:#17120d;--card:#211a13;--ink:#f3e9da;--soft:#a8977f;--line:#33291e;--acc:#f0a23a;--acc2:#ffb95c}}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;padding:28px 16px 96px}
+main{max-width:560px;margin:0 auto}
+.mark{display:flex;align-items:center;gap:10px;color:var(--soft);font-size:14px;letter-spacing:.04em;text-transform:lowercase}
+.mark i{width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 40% 40%,#ffc24d,var(--acc) 60%,var(--acc2));display:inline-block}
+h1{font-size:30px;line-height:1.15;margin:22px 0 4px;letter-spacing:-.01em}
+.sub{color:var(--soft);font-size:15px}
+.list{margin-top:22px;display:grid;gap:10px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;color:inherit;text-decoration:none}
+.row b{font-weight:600}.row small{display:block;color:var(--soft);font-size:13px;margin-top:2px}
+.price{font-weight:700;color:var(--acc2);white-space:nowrap}
+.go{position:fixed;left:16px;right:16px;bottom:18px;max-width:560px;margin:0 auto;display:block;text-align:center;background:var(--acc);color:#1d1206;font-weight:700;padding:15px;border-radius:14px;text-decoration:none;box-shadow:0 6px 20px rgba(0,0,0,.15)}
+.empty{color:var(--soft);margin-top:30px}
+`;
+
+function pageHtml(title, body) {
+  return new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${h(title)}</title><style>${PAGE_CSS}</style></head><body><main>${body}</main></body></html>`,
+    { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=30" } });
+}
+
+async function webPage(env, sid) {
+  const c = { env, st: new Store(env.DB) };
+  c.bot = await botName(c);
+  const mark = `<a class="mark" href="/" style="text-decoration:none"><i></i>munshi</a>`;
+  if (!sid) {
+    const shops = await allShops(c);
+    const rows = shops.map(([id, sh]) => `<a class="row" href="/s/${encodeURIComponent(id)}"><span><b>${h(sh.shopName)}</b><small>${h(sh.area || "")}</small></span><span class="sub">${(sh.items || []).length} items →</span></a>`).join("");
+    return pageHtml("Munshi", `${mark}<h1>Shops on Munshi</h1><p class="sub">Speak your shop into existence.</p>
+<div class="list">${rows || `<p class="empty">No shops yet.</p>`}</div>
+<a class="go" href="https://t.me/${c.bot}">Open your shop on Telegram</a>`);
+  }
+  const sh = await getShop(c, sid);
+  if (!sh) return pageHtml("Not found", `${mark}<h1>Shop not found</h1><p class="sub"><a href="/">All shops</a></p>`);
+  const rows = (sh.items || []).map(it => `<div class="row"><span><b>${h(it.name)}</b>${it.local && it.local !== it.name ? `<small>${h(it.local)}</small>` : ""}</span><span class="price">${rs(it.price)}${it.unit ? `<small style="font-weight:400;color:var(--soft);text-align:right">/ ${h(it.unit)}</small>` : ""}</span></div>`).join("");
+  return pageHtml(sh.shopName, `${mark}<h1>${h(sh.shopName)}</h1><p class="sub">${h(sh.area || "")}</p>
+<div class="list">${rows || `<p class="empty">Menu coming soon.</p>`}</div>
+<a class="go" href="${shopLink(c, sid)}">Order on Telegram</a>`);
 }
