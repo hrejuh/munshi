@@ -383,6 +383,22 @@ def show_sales(chat):
          [[{"text": "← Back", "callback_data": "home"}]])
 
 
+ADMIN = 1238521561
+
+
+def show_admin(chat):
+    shops = db["shops"]
+    allo = [o for o in db["orders"].values() if o["status"] != "declined"]
+    out = [f"<b>Munshi</b> · {len(shops)} shops · {len(allo)} orders · {rs(sum(o['total'] for o in allo))}"]
+    for sid, sh in shops.items():
+        st = sales(sid)
+        who = sh.get("ownerName") or ""
+        out.append(f"\n<b>{h(sh['shopName'])}</b> {h(who)} · {h(sh.get('area', ''))}\n"
+                   f"{len(sh['items'])} items · {st['n']} orders · {rs(st['total'])}"
+                   + (f"\n{sh['page']}" if sh.get("page") else ""))
+    send(chat, "\n".join(out)[:4000])
+
+
 def show_orders(chat):
     sid, shop = my_shop(chat)
     if not shop:
@@ -616,6 +632,8 @@ def on_message(m):
         return dashboard(chat)
     if text == "/new":
         return start_onboarding(chat)
+    if text == "/admin" and chat == ADMIN:
+        return show_admin(chat)
     if text == "/sales":
         return show_sales(chat)
     if text == "/orders":
