@@ -36,6 +36,7 @@ export default {
       // never echo the webhook url back: it contains the secret
       return Response.json({ setWebhook: { ok: hook.ok, description: hook.description }, setMyCommands: { ok: cmds.ok, description: cmds.description } });
     }
+    if (url.pathname.startsWith("/m/") || url.pathname.startsWith("/api/m/")) return manageRoute(req, env, url, ctx);
     if (req.method === "GET" && (url.pathname === "/" || url.pathname.startsWith("/s/")))
       return webPage(env, url.pathname === "/" ? null : decodeURIComponent(url.pathname.slice(3)));
     return new Response("not found", { status: 404 });
@@ -516,6 +517,7 @@ async function dashboard(c, chat) {
     [[{ text: "➕ Add items", callback_data: "add" }, { text: "✏️ Edit items", callback_data: "edit" }],
      [{ text: "📊 Sales", callback_data: "sales" }, { text: "📦 Orders", callback_data: "orders" }],
      [{ text: "📤 Share catalogue", callback_data: "share" }, { text: "🛵 Delivery", callback_data: "dlv" }],
+     [{ text: "🌐 Manage on web", url: await manageLink(c.env, sid) }],
      [{ text: "🆕 Start a new shop", callback_data: "new" }]]);
 }
 
@@ -628,6 +630,19 @@ async function ownerText(c, chat, s, m) {
   }
   plan = plan && typeof plan === "object" ? plan : {};
   console.log(`  owner plan ${JSON.stringify(plan).slice(0, 300)}`);
+  const { notes, show } = applyOwnerPlan(shop, plan);
+  if (notes.length) {
+    await save(c);
+    c.bg.push(publishPage(c, sid));
+  }
+  const reply = h(plan.reply || "");
+  const body = [reply, notes.join("\n")].filter(Boolean).join("\n") || "👍";
+  await send(c, chat, body, [[{ text: "🏪 My shop", callback_data: "home" }]], { speak: plan.reply || false });
+  const fn = { sales: showSales, orders: showOrders, edit: showEdit, items: showEdit, dashboard }[show];
+  if (fn) await fn(c, chat);
+}
+
+function applyOwnerPlan(shop, plan) {
   const notes = [], removals = [];
   let show = null;
   for (const a of plan.actions || []) {
@@ -656,15 +671,7 @@ async function ownerText(c, chat, s, m) {
   for (const i of [...new Set(removals)].sort((a, b) => b - a)) {
     if (i >= 0 && i < shop.items.length) notes.push(`🗑 ${h(iname(shop.items.splice(i, 1)[0]))}`);
   }
-  if (notes.length) {
-    await save(c);
-    c.bg.push(publishPage(c, sid));
-  }
-  const reply = h(plan.reply || "");
-  const body = [reply, notes.join("\n")].filter(Boolean).join("\n") || "👍";
-  await send(c, chat, body, [[{ text: "🏪 My shop", callback_data: "home" }]], { speak: plan.reply || false });
-  const fn = { sales: showSales, orders: showOrders, edit: showEdit, items: showEdit, dashboard }[show];
-  if (fn) await fn(c, chat);
+  return { notes, show };
 }
 
 function catalogueText(shop) {
@@ -1046,4 +1053,187 @@ async function webPage(env, sid) {
   return pageHtml(sh.shopName, `${mark}<h1>${h(sh.shopName)}</h1><p class="sub">${h(sh.area || "")}</p>
 <div class="list">${rows || `<p class="empty">Menu coming soon.</p>`}</div>
 <a class="go" href="${shopLink(c, sid)}">Order on Telegram</a>`);
+}
+
+// ---------- owner web dashboard: /m/<sid>?k=<signed key> ----------
+
+async function manageKey(env, sid) {
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(env.WEBHOOK_SECRET || ""), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const sig = new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode("manage:" + sid)));
+  return [...sig.slice(0, 12)].map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function manageLink(env, sid) {
+  return `${PUBLIC_URL}/m/${encodeURIComponent(sid)}?k=${await manageKey(env, sid)}`;
+}
+
+const unh = s => String(s).replace(/<[^>]*>/g, "").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#x27;/g, "'").replace(/&amp;/g, "&");
+
+async function ttsMp3(env, text) {
+  const t = ttsText(text);
+  if (!wordChars(t) || !env.ELEVENLABS_API_KEY) return null;
+  const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}?output_format=mp3_44100_64`, {
+    method: "POST", signal: AbortSignal.timeout(20000),
+    headers: { "xi-api-key": env.ELEVENLABS_API_KEY, "content-type": "application/json", accept: "audio/mpeg" },
+    body: JSON.stringify({ text: t, model_id: "eleven_multilingual_v2" }),
+  });
+  if (!r.ok) { console.log("web tts", r.status); return null; }
+  return b64(await r.arrayBuffer());
+}
+
+async function sttBlob(env, buf, mime) {
+  const fd = new FormData();
+  fd.append("model_id", "scribe_v1");
+  fd.append("file", new Blob([buf], { type: mime || "audio/webm" }), "voice." + ((mime || "").includes("mp4") ? "mp4" : "webm"));
+  const r = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
+    method: "POST", headers: { "xi-api-key": env.ELEVENLABS_API_KEY }, body: fd, signal: AbortSignal.timeout(45000),
+  });
+  if (!r.ok) throw new Error(`stt ${r.status} ${(await r.text()).slice(0, 200)}`);
+  return ((await r.json()).text || "").replace(/\[[^\]]*\]|\([^)]*\)/g, " ").replace(/\s+/g, " ").trim();
+}
+
+const shopView = sh => ({ shopName: sh.shopName || "", area: sh.area || "", phone: sh.phone || "", items: sh.items || [] });
+
+async function manageRoute(req, env, url, ctx) {
+  const parts = url.pathname.split("/").filter(Boolean); // ["m", sid] or ["api","m",sid,(voice)]
+  const api = parts[0] === "api";
+  const sid = decodeURIComponent(parts[api ? 2 : 1] || "");
+  const k = url.searchParams.get("k") || "";
+  if (!sid || !env.WEBHOOK_SECRET || k !== await manageKey(env, sid)) return new Response("This link is not valid.", { status: 403 });
+  const c = { env, st: new Store(env.DB), bg: [] };
+  c.bot = await botName(c);
+  const shop = await getShop(c, sid);
+  if (!shop) return new Response("Shop not found", { status: 404 });
+  const json = o => Response.json(o, { headers: { "cache-control": "no-store" } });
+
+  if (!api) return managePage(sid, shop);
+  if (req.method === "GET") return json(shopView(shop));
+
+  if (req.method === "POST" && parts[3] === "voice") {
+    const buf = await req.arrayBuffer();
+    if (buf.byteLength < 1500) return json({ error: "Too short. Hold the mic a little longer." });
+    let heardText = "";
+    try { heardText = await sttBlob(env, buf, req.headers.get("content-type")); } catch (e) { console.log("web stt", String(e)); }
+    if (wordChars(heardText).length < 2) return json({ error: "Couldn't catch that. Try again, a little closer." });
+    console.log(`web voice ${sid}: ${heardText.slice(0, 80)}`);
+    let plan;
+    try {
+      plan = await geminiJson(c, fill(OWNER_PROMPT, {
+        shop: shop.shopName, items: catalogueText(shop),
+        today: JSON.stringify(await sales(c, sid, true)), alltime: JSON.stringify(await sales(c, sid)) }) + heardText);
+    } catch (e) {
+      plan = { actions: [{ type: "add", items: await parseItems(c, heardText) }], reply: "" };
+    }
+    plan = plan && typeof plan === "object" ? plan : {};
+    const { notes } = applyOwnerPlan(shop, plan);
+    if (notes.length) { await save(c); ctx.waitUntil(publishPage(c, sid)); }
+    const reply = plan.reply || (notes.length ? "Done." : "");
+    return json({ heard: heardText, reply, notes: notes.map(unh), shop: shopView(shop), audio: await ttsMp3(env, reply) });
+  }
+
+  if (req.method === "POST") {
+    let b;
+    try { b = await req.json(); } catch { return json({ error: "bad request" }); }
+    const name = String(b.shopName || "").trim().slice(0, 80);
+    if (!name) return json({ error: "Shop name can't be empty." });
+    let items;
+    try {
+      items = (b.items || []).filter(i => i && String(i.name || "").trim()).slice(0, 200).map(i => cleanItem({ ...i, name: String(i.name).trim().slice(0, 80) }));
+    } catch { return json({ error: "Every item needs a price (a number)." }); }
+    shop.shopName = name;
+    shop.area = String(b.area || "").trim().slice(0, 80);
+    shop.phone = String(b.phone || "").replace(/[^\d+ ]/g, "").slice(0, 16);
+    shop.items = items;
+    await save(c);
+    ctx.waitUntil(publishPage(c, sid));
+    return json({ ok: true, shop: shopView(shop) });
+  }
+  return new Response("not allowed", { status: 405 });
+}
+
+function managePage(sid, shop) {
+  const css = PAGE_CSS + `
+.f{display:grid;gap:8px;margin-top:18px}
+label{font-size:12px;color:var(--soft);letter-spacing:.04em;text-transform:lowercase}
+input{width:100%;font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+input:focus{outline:2px solid var(--acc);border-color:transparent}
+.it{display:grid;grid-template-columns:1fr 84px 32px;gap:6px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px}
+.it .sub2{grid-column:1/3;display:grid;grid-template-columns:1fr 84px;gap:6px}
+.it input{padding:8px 10px;font-size:15px}
+.x{background:none;border:0;color:var(--soft);font-size:20px;cursor:pointer}
+.add{background:none;border:1px dashed var(--line);border-radius:14px;padding:12px;color:var(--soft);font:inherit;cursor:pointer}
+.bar{position:fixed;left:0;right:0;bottom:0;padding:12px 16px 18px;background:linear-gradient(transparent,var(--bg) 30%)}
+.bar div{max-width:560px;margin:0 auto;display:flex;gap:10px;align-items:center}
+.save{flex:1;border:0;background:var(--acc);color:#1d1206;font:inherit;font-weight:700;padding:15px;border-radius:14px;cursor:pointer}
+.mic{width:56px;height:56px;border-radius:50%;border:0;background:var(--ink);color:var(--bg);font-size:22px;cursor:pointer;flex:none}
+.mic.on{background:#c0392b;color:#fff;animation:p 1.2s infinite}
+@keyframes p{50%{transform:scale(1.08)}}
+.say{margin-top:16px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:15px;display:none}
+.say small{display:block;color:var(--soft);margin-bottom:4px}
+.top{display:flex;justify-content:space-between;align-items:center}
+.top a{color:var(--soft);font-size:14px}
+`;
+  const data = JSON.stringify(shopView(shop)).replace(/</g, "\\u003c");
+  return new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${h(shop.shopName)} · manage</title><style>${css}</style></head><body><main>
+<div class="top"><span class="mark"><i></i>munshi</span><a href="/s/${encodeURIComponent(sid)}" target="_blank">public page ↗</a></div>
+<div class="f"><label>shop name</label><input id="n"><label>area</label><input id="a"><label>phone</label><input id="p" inputmode="tel"></div>
+<div class="say" id="say"></div>
+<div class="list" id="items"></div>
+<div class="list"><button class="add" id="addb">+ add item</button></div>
+<div style="height:90px"></div>
+</main>
+<div class="bar"><div><button class="mic" id="mic" title="Tap and speak">🎙</button><button class="save" id="save">Save</button></div></div>
+<script>
+const API = "/api/m/${encodeURIComponent(sid)}" + location.search;
+let S = ${data};
+const $ = id => document.getElementById(id);
+function row(it, i) {
+  const d = document.createElement("div"); d.className = "it";
+  d.innerHTML = '<input placeholder="item" data-k="name"><input placeholder="₹" inputmode="decimal" data-k="price"><button class="x" title="remove">×</button><div class="sub2"><input placeholder="local name" data-k="local"><input placeholder="unit" data-k="unit"></div>';
+  d.querySelectorAll("input").forEach(inp => { inp.value = it[inp.dataset.k] ?? ""; inp.oninput = () => { S.items[i][inp.dataset.k] = inp.value; dirty(); }; });
+  d.querySelector(".x").onclick = () => { S.items.splice(i, 1); render(); dirty(); };
+  return d;
+}
+function render() {
+  $("n").value = S.shopName; $("a").value = S.area; $("p").value = S.phone;
+  const box = $("items"); box.innerHTML = ""; S.items.forEach((it, i) => box.appendChild(row(it, i)));
+}
+function dirty() { $("save").textContent = "Save"; }
+["n","a","p"].forEach((id, j) => $(id).oninput = e => { S[["shopName","area","phone"][j]] = e.target.value; dirty(); });
+$("addb").onclick = () => { S.items.push({ name: "", local: "", price: "", unit: "" }); render(); dirty(); $("items").lastChild.querySelector("input").focus(); };
+$("save").onclick = async () => {
+  $("save").textContent = "Saving…";
+  const r = await (await fetch(API, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(S) })).json();
+  if (r.error) { $("save").textContent = "Save"; return alert(r.error); }
+  S = r.shop; render(); $("save").textContent = "Saved ✓";
+};
+function show(html) { const b = $("say"); b.innerHTML = html; b.style.display = "block"; }
+const esc = s => String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+let rec, chunks = [];
+$("mic").onclick = async () => {
+  if (rec && rec.state === "recording") return rec.stop();
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch { return alert("Allow the microphone to talk to Munshi."); }
+  chunks = []; rec = new MediaRecorder(stream);
+  rec.ondataavailable = e => chunks.push(e.data);
+  rec.onstop = async () => {
+    stream.getTracks().forEach(t => t.stop()); $("mic").classList.remove("on"); $("mic").textContent = "…";
+    const blob = new Blob(chunks, { type: rec.mimeType || "audio/webm" });
+    try {
+      const r = await (await fetch(API.replace("?", "/voice?"), { method: "POST", headers: { "content-type": blob.type }, body: blob })).json();
+      if (r.error) show(esc(r.error));
+      else {
+        show("<small>you said: " + esc(r.heard) + "</small>" + esc(r.reply) + (r.notes.length ? "<br>" + r.notes.map(esc).join("<br>") : ""));
+        if (r.shop) { S = r.shop; render(); $("save").textContent = "Saved ✓"; }
+        if (r.audio) new Audio("data:audio/mpeg;base64," + r.audio).play().catch(() => {});
+      }
+    } catch { show("Something went wrong. Try again."); }
+    $("mic").textContent = "🎙";
+  };
+  rec.start(); $("mic").classList.add("on"); $("mic").textContent = "■";
+  show("Listening… tap ■ when done. Try: “chai 15 kar do, samosa 20 add karo”");
+};
+render();
+</script></body></html>`, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
 }
