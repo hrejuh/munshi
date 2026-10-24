@@ -209,6 +209,10 @@ function istDayStart() {
   return (d.getTime() - IST_MS) / 1000;
 }
 function randChars(chars, k) { let s = ""; for (let i = 0; i < k; i++) s += chars[Math.floor(Math.random() * chars.length)]; return s; }
+// The customer's latest message decides the reply language; the page's UI language only breaks ties.
+const LANG_NAMES = { en: "English", kn: "Kannada", hi: "Hindi", ta: "Tamil" };
+const replyLang = ui => `Reply in the same language and script as the customer's LATEST message. If that message is in English, reply in English, even if earlier turns used another language. Only if the latest message is ambiguous (just numbers, a name, one word) use ${LANG_NAMES[ui] || "English"}.`;
+const uiLang = b => (b && LANG_NAMES[b.lang]) ? b.lang : "";
 const fill = (tpl, vars) => tpl.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m));
 const wordChars = s => s.replace(/[^\p{L}\p{N}_]/gu, "");
 const dec = s => { try { return decodeURIComponent(s); } catch { return ""; } };
@@ -667,7 +671,7 @@ async function ownerText(c, chat, s, m) {
   await tg(c, "sendChatAction", { chat_id: chat, action: "typing" });
   let plan;
   try {
-    plan = await geminiJson(c, fill(OWNER_PROMPT, {
+    plan = await geminiJson(c, fill(OWNER_PROMPT, { lang: replyLang(""),
       shop: shop.shopName, items: catalogueText(shop),
       today: JSON.stringify(await sales(c, sid, true)), alltime: JSON.stringify(await sales(c, sid)) }) + t);
   } catch (e) {
@@ -741,6 +745,8 @@ Possible actions:
  {"type":"show","what":"sales"|"orders"|"items"|"dashboard"}  - when they ask to see something
 Use no actions for greetings, questions you can answer from the data above, or small talk. Never invent products or prices they did not say. If something is ambiguous, ask in the reply and take no action.
 
+{lang}
+
 Shopkeeper said:
 `;
 
@@ -751,8 +757,10 @@ Catalogue (index. English / local name / unit / price):
 
 Customer's cart now: {cart}
 
-Return only JSON: {"add":[{"index":catalogue index,"qty":number}], "remove":[catalogue index], "checkout": true if they want to place the order now, "reply": "short friendly reply in the customer's language and script, 1-2 sentences"}
+Return only JSON: {"add":[{"index":catalogue index,"qty":number}], "remove":[catalogue index], "checkout": true if they want to place the order now, "reply": "short friendly reply, 1-2 sentences, in the language rule above"}
 Never say the order is placed or confirmed: if checkout is true, say you need their name and address next. Only offer products in the catalogue. If they ask for something not listed, say so and suggest the closest item. Never invent prices.
+
+{lang}
 
 {history}Customer said:
 `;
@@ -771,7 +779,7 @@ async function buyerText(c, chat, s, m) {
     .map(([i, q]) => `${q}x ${iname(shop.items[+i])}`).join(", ") || "empty";
   let plan;
   try {
-    plan = await geminiJson(c, fill(BUYER_PROMPT, { shop: shop.shopName, area: shop.area || "", items: catalogueText(shop), cart: cartTxt, history: "" }) + t);
+    plan = await geminiJson(c, fill(BUYER_PROMPT, { lang: replyLang(""), shop: shop.shopName, area: shop.area || "", items: catalogueText(shop), cart: cartTxt, history: "" }) + t);
   } catch (e) {
     console.log("buyer llm", e && e.stack || e);
     return send(c, chat, "Tap the items below to add them.");
@@ -1301,11 +1309,68 @@ function pageHtml(title, body, o = {}) {
 // Buyer-side labels from Arjun's lib/i18n.ts; English is what the page renders.
 const SHOP_I18N = {
   kn: { delivery: "ಡೆಲಿವರಿ", pickup: "ಪಿಕಪ್", name: "ಹೆಸರು", phone: "ಫೋನ್ ನಂಬರ್", deliveryAddress: "ಡೆಲಿವರಿ ವಿಳಾಸ", payCash: "ಡೆಲಿವರಿ ಅಥವಾ ಪಿಕಪ್ ವೇಳೆ ನಗದು ಪಾವತಿಸಿ",
-    subtotal: "ಉಪ ಮೊತ್ತ", deliveryFee: "ಡೆಲಿವರಿ ಶುಲ್ಕ", total: "ಒಟ್ಟು", placeOrder: "ಆರ್ಡರ್ ಮಾಡಿ", backToShop: "ಅಂಗಡಿಗೆ ಹಿಂತಿರುಗಿ", items: "ಸಾಮಾನು", checkout: "ಚೆಕ್‌ಔಟ್" },
+    subtotal: "ಉಪ ಮೊತ್ತ", deliveryFee: "ಡೆಲಿವರಿ ಶುಲ್ಕ", total: "ಒಟ್ಟು", placeOrder: "ಆರ್ಡರ್ ಮಾಡಿ", backToShop: "ಅಂಗಡಿಗೆ ಹಿಂತಿರುಗಿ", items: "ಸಾಮಾನು", checkout: "ಚೆಕ್‌ಔಟ್",
+    shareWA: "ವಾಟ್ಸ್‌ಆ್ಯಪ್‌ನಲ್ಲಿ ಹಂಚಿ",
+    note: "ಅಂಗಡಿಗೆ ಟಿಪ್ಪಣಿ",
+    optional: "ಐಚ್ಛಿಕ",
+    useLoc: "ನನ್ನ ಸ್ಥಳ ಬಳಸಿ",
+    finding: "ಸ್ಥಳ ಹುಡುಕಲಾಗುತ್ತಿದೆ…",
+    located: "ಸ್ಥಳ ಸೇರಿಸಲಾಗಿದೆ ✓",
+    noLoc: "ಸ್ಥಳ ಸಿಗಲಿಲ್ಲ",
+    payUpi: "ಈಗಲೇ UPI ಮೂಲಕ ಪಾವತಿ",
+    cashDelivery: "ಡೆಲಿವರಿಯಲ್ಲಿ ನಗದು",
+    cashPickup: "ಪಿಕಪ್‌ನಲ್ಲಿ ನಗದು",
+    upiNote: "ಆರ್ಡರ್ ಮಾಡಿದ ಮೇಲೆ UPI ಪೇ ಬಟನ್ ಸಿಗುತ್ತದೆ",
+    item: "ವಸ್ತು",
+    free: "ಉಚಿತ",
+    menuSoon: "ಮೆನು ಶೀಘ್ರದಲ್ಲಿ.",
+    search: "ಹುಡುಕಿ",
+    talkHello: "ನಮಸ್ಕಾರ! ಏನು ಬೇಕು ಹೇಳಿ 🎙",
+    talkPh: "ಟೈಪ್ ಮಾಡಿ, ಅಥವಾ 🎙 ಒತ್ತಿ",
+    micNo: "ಮೈಕ್ರೋಫೋನ್ ಅನುಮತಿ ನೀಡಿ, ಅಥವಾ ಟೈಪ್ ಮಾಡಿ.",
+    netErr: "ನೆಟ್‌ವರ್ಕ್ ತೊಂದರೆ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ." },
   hi: { delivery: "डिलीवरी", pickup: "पिकअप", name: "नाम", phone: "फ़ोन नंबर", deliveryAddress: "डिलीवरी का पता", payCash: "डिलीवरी या पिकअप पर नकद भुगतान करें",
-    subtotal: "सामान का कुल", deliveryFee: "डिलीवरी चार्ज", total: "कुल", placeOrder: "ऑर्डर करें", backToShop: "दुकान पर वापस", items: "सामान", checkout: "चेकआउट" },
+    subtotal: "सामान का कुल", deliveryFee: "डिलीवरी चार्ज", total: "कुल", placeOrder: "ऑर्डर करें", backToShop: "दुकान पर वापस", items: "सामान", checkout: "चेकआउट",
+    shareWA: "WhatsApp पर शेयर करें",
+    note: "दुकान के लिए नोट",
+    optional: "वैकल्पिक",
+    useLoc: "मेरी लोकेशन लें",
+    finding: "लोकेशन ढूंढ रहे हैं…",
+    located: "लोकेशन जुड़ गई ✓",
+    noLoc: "लोकेशन नहीं मिली",
+    payUpi: "अभी UPI से पेमेंट",
+    cashDelivery: "डिलीवरी पर नकद",
+    cashPickup: "पिकअप पर नकद",
+    upiNote: "ऑर्डर के बाद UPI पेमेंट का बटन मिलेगा",
+    item: "चीज़",
+    free: "मुफ़्त",
+    menuSoon: "मेन्यू जल्द आएगा।",
+    search: "खोजें",
+    talkHello: "नमस्ते! बताइए, क्या चाहिए 🎙",
+    talkPh: "लिखें, या 🎙 दबाएं",
+    micNo: "माइक्रोफ़ोन चालू करें, या लिखें।",
+    netErr: "नेटवर्क की दिक्कत। फिर से कोशिश करें।" },
   ta: { delivery: "டெலிவரி", pickup: "பிக்கப்", name: "பெயர்", phone: "தொலைபேசி எண்", deliveryAddress: "டெலிவரி முகவரி", payCash: "டெலிவரி அல்லது பிக்கப்பின் போது ரொக்கமாக செலுத்துங்கள்",
-    subtotal: "துணைத் தொகை", deliveryFee: "டெலிவரி கட்டணம்", total: "மொத்தம்", placeOrder: "ஆர்டர் செய்", backToShop: "கடைக்குத் திரும்பு", items: "பொருட்கள்", checkout: "செக்அவுட்" },
+    subtotal: "துணைத் தொகை", deliveryFee: "டெலிவரி கட்டணம்", total: "மொத்தம்", placeOrder: "ஆர்டர் செய்", backToShop: "கடைக்குத் திரும்பு", items: "பொருட்கள்", checkout: "செக்அவுட்",
+    shareWA: "WhatsApp-ல் பகிரவும்",
+    note: "கடைக்கான குறிப்பு",
+    optional: "விருப்பம்",
+    useLoc: "என் இருப்பிடத்தைப் பயன்படுத்து",
+    finding: "இருப்பிடம் தேடுகிறோம்…",
+    located: "இருப்பிடம் சேர்க்கப்பட்டது ✓",
+    noLoc: "இருப்பிடம் கிடைக்கவில்லை",
+    payUpi: "இப்போதே UPI-யில் செலுத்து",
+    cashDelivery: "டெலிவரியில் ரொக்கம்",
+    cashPickup: "பிக்கப்பில் ரொக்கம்",
+    upiNote: "ஆர்டருக்குப் பிறகு UPI பணம் செலுத்தும் பொத்தான் வரும்",
+    item: "பொருள்",
+    free: "இலவசம்",
+    menuSoon: "மெனு விரைவில்.",
+    search: "தேடு",
+    talkHello: "வணக்கம்! என்ன வேண்டும் சொல்லுங்கள் 🎙",
+    talkPh: "தட்டச்சு செய்யுங்கள், அல்லது 🎙",
+    micNo: "மைக்கை அனுமதியுங்கள், அல்லது தட்டச்சு செய்யுங்கள்.",
+    netErr: "நெட்வொர்க் பிரச்சனை. மீண்டும் முயலுங்கள்." },
 };
 
 const jsonForScript = o => JSON.stringify(o).replace(/</g, "\\u003c").replace(/\u2028|\u2029/g, "");
@@ -1322,18 +1387,18 @@ async function webPage(env, sid) {
   const tel = sh.phone ? ` · <a href="tel:${h(sh.phone)}" style="color:inherit">📞 ${h(sh.phone)}</a>` : "";
   return pageHtml(sh.shopName, `<div class="top">${mark}<div class="langs">${[["en", "EN"], ...LANGS.filter(l => l[0] !== "en")].map(([k, l]) => `<button data-l="${k}">${l}</button>`).join("")}</div></div>
 <section id="shop"><div class="shead rise" style="--hu:${hue(sh.shopName)}"><span class="av big">${h(initial(sh.shopName))}</span><div><h1>${h(sh.shopName)}</h1><p class="sub">${h(sh.area || "")}${tel}</p></div></div>
-${items.length > 8 ? `<input class="search" id="find" placeholder="Search ${items.length} items" autocomplete="off">` : ""}
-<div class="list">${rows || `<p class="empty">Menu coming soon.</p>`}</div>
-<a class="alt" href="${h(waShare(sh, sid))}" target="_blank" rel="noopener">share on WhatsApp</a></section>
+${items.length > 8 ? `<input class="search" id="find" data-tph="search" placeholder="Search ${items.length} items" autocomplete="off">` : ""}
+<div class="list">${rows || `<p class="empty" data-t="menuSoon">Menu coming soon.</p>`}</div>
+<a class="alt" href="${h(waShare(sh, sid))}" target="_blank" rel="noopener" data-t="shareWA">share on WhatsApp</a></section>
 <section id="co" hidden><a class="alt" href="#" id="back" style="text-align:left;margin:18px 0 0">← <span data-t="backToShop">back</span></a><h1 data-t="checkout">Your order</h1>
 <div class="list rcpt" id="lines"></div>
 <div class="seg"><button type="button" data-m="delivery" class="on">🛵 <span data-t="delivery">Delivery</span></button><button type="button" data-m="pickup">🏃 <span data-t="pickup">Pickup</span></button></div>
-${sh.upi ? `<div class="seg" id="pay"><button type="button" data-p="upi">Pay now by UPI</button><button type="button" data-p="cod" class="on" id="cod">Cash on delivery</button></div>` : ""}
+${sh.upi ? `<div class="seg" id="pay"><button type="button" data-p="upi" data-t="payUpi">Pay now by UPI</button><button type="button" data-p="cod" class="on" id="cod">Cash on delivery</button></div>` : ""}
 <div class="f"><label data-t="name">name</label><input id="bn" maxlength="60" autocomplete="name">
 <label data-t="phone">phone</label><input id="bp" maxlength="15" inputmode="tel" autocomplete="tel">
 <div id="dl" class="f" style="margin:0"><label data-t="deliveryAddress">delivery address</label><textarea id="ba" maxlength="200" rows="2" autocomplete="street-address"></textarea>
-<button type="button" class="add" id="gl">📍 use my location</button></div>
-<label>note for the shop</label><input id="bt" maxlength="200" placeholder="optional"></div>
+<button type="button" class="add" id="gl">📍 <span data-t="useLoc">use my location</span></button></div>
+<label data-t="note">note for the shop</label><input id="bt" maxlength="200" data-tph="optional" placeholder="optional"></div>
 <div class="tot" id="tot"></div><p class="err" id="err"></p>
 <p class="sub" style="text-align:center;margin-top:8px" id="paynote">Pay cash on delivery or pickup</p></section>
 <a class="go" id="bar" href="#" hidden></a>
@@ -1345,11 +1410,13 @@ let lang = "en";
 try { lang = localStorage.getItem("munshi-lang") || "en"; } catch {}
 const T = (k, en) => (I18N[lang] || {})[k] || en;
 document.querySelectorAll("[data-t]").forEach(e => { e.dataset.en = e.textContent; });
+document.querySelectorAll("[data-tph]").forEach(e => { e.dataset.enph = e.placeholder; });
 function setLang(l) {
   lang = I18N[l] ? l : "en";
   try { localStorage.setItem("munshi-lang", lang); } catch {}
   document.documentElement.lang = lang;
   document.querySelectorAll("[data-t]").forEach(e => { e.textContent = T(e.dataset.t, e.dataset.en); });
+  document.querySelectorAll("[data-tph]").forEach(e => { e.placeholder = T(e.dataset.tph, e.dataset.enph); });
   document.querySelectorAll(".langs button").forEach(b => b.classList.toggle("on", b.dataset.l === lang));
   paint();
 }
@@ -1373,7 +1440,9 @@ function paint() {
   document.querySelectorAll(".row[data-i]").forEach(r => { const q = (cart[r.dataset.i] || {}).q || 0; r.classList.toggle("has", q > 0); r.querySelector(".n").textContent = q; });
   const n = count(), co = inCo();
   $("shop").hidden = co; $("co").hidden = !co; $("bar").hidden = !n;
-  if (!co) { $("bar").innerHTML = "<em>" + n + "</em>" + T("items", n > 1 ? "items" : "item") + " · " + rs(sub()) + " →"; return; }
+  const word = T(n > 1 ? "items" : "item", n > 1 ? "items" : "item");
+  $("tkc").hidden = !n; $("tkc").textContent = n + " " + word + " · " + rs(sub()) + " →"; // the talk sheet covers the bar
+  if (!co) { $("bar").innerHTML = "<em>" + n + "</em>" + word + " · " + rs(sub()) + " →"; return; }
   $("bar").textContent = busy ? "…" : T("placeOrder", "Place order") + " · " + rs(quote ? quote.total : sub());
   $("lines").innerHTML = "";
   for (const [i, x] of Object.entries(cart)) {
@@ -1385,11 +1454,11 @@ function paint() {
   $("dl").hidden = mode !== "delivery";
   document.querySelectorAll(".seg button[data-m]").forEach(b => b.classList.toggle("on", b.dataset.m === mode));
   document.querySelectorAll(".seg button[data-p]").forEach(b => b.classList.toggle("on", b.dataset.p === pay));
-  if ($("cod")) $("cod").textContent = mode === "pickup" ? "Cash at pickup" : "Cash on delivery";
-  $("paynote").textContent = pay === "upi" ? "You'll get a UPI pay button after you place the order" : T("payCash", "Pay cash on delivery or pickup");
+  if ($("cod")) $("cod").textContent = T(mode === "pickup" ? "cashPickup" : "cashDelivery", mode === "pickup" ? "Cash at pickup" : "Cash on delivery");
+  $("paynote").textContent = pay === "upi" ? T("upiNote", "You'll get a UPI pay button after you place the order") : T("payCash", "Pay cash on delivery or pickup");
   const t = quote || { subtotal: sub(), feeCharged: 0, total: sub() };
   $("tot").innerHTML = "<div><span>" + T("subtotal", "items") + "</span><span>" + rs(t.subtotal) + "</span></div>" +
-    (mode === "delivery" ? "<div><span>" + T("deliveryFee", "delivery") + (t.km != null ? " · " + t.km.toFixed(1) + " km" : "") + "</span><span>" + (t.feeCharged ? rs(t.feeCharged) : "free") + "</span></div>" : "") +
+    (mode === "delivery" ? "<div><span>" + T("deliveryFee", "delivery") + (t.km != null ? " · " + t.km.toFixed(1) + " km" : "") + "</span><span>" + (t.feeCharged ? rs(t.feeCharged) : T("free", "free")) + "</span></div>" : "") +
     "<div><span>" + T("total", "total") + "</span><span>" + rs(t.total) + "</span></div>";
 }
 function body(extra) {
@@ -1419,14 +1488,14 @@ document.querySelectorAll(".seg button[data-m]").forEach(b => b.onclick = () => 
 document.querySelectorAll(".seg button[data-p]").forEach(b => b.onclick = () => { pay = b.dataset.p; paint(); });
 $("gl").onclick = () => {
   if (!navigator.geolocation) return;
-  $("gl").textContent = "📍 finding you…";
-  navigator.geolocation.getCurrentPosition(p => { loc = [p.coords.latitude, p.coords.longitude]; $("gl").textContent = "📍 location added ✓"; requote(); },
-    () => { $("gl").textContent = "📍 couldn't get your location"; }, { enableHighAccuracy: true, timeout: 15000 });
+  $("gl").textContent = "📍 " + T("finding", "finding you…");
+  navigator.geolocation.getCurrentPosition(p => { loc = [p.coords.latitude, p.coords.longitude]; $("gl").textContent = "📍 " + T("located", "location added ✓"); requote(); },
+    () => { $("gl").textContent = "📍 " + T("noLoc", "couldn't get your location"); }, { enableHighAccuracy: true, timeout: 15000 });
 };
 setLang(lang);
 if (inCo()) requote();
 window.TALK = {
-  url: "/api/talk/" + encodeURIComponent(SID), hello: ${jsonForScript("Hi! Tell me what you'd like 🎙")},
+  url: "/api/talk/" + encodeURIComponent(SID), hello: () => T("talkHello", "Hi! Tell me what you'd like 🎙"), t: T,
   extra: () => ({ cart: Object.entries(cart).map(([i, x]) => [+i, x.q]), lang }),
   apply: r => { for (const [i, q] of r.add || []) setQ(i, ((cart[i] || {}).q || 0) + q); for (const i of r.remove || []) setQ(i, 0); if (r.checkout && count()) location.hash = "checkout"; },
 };
@@ -1561,7 +1630,7 @@ async function talkApi(req, env, sid) {
   const cartTxt = Object.entries(cart).map(([i, q]) => `${q}x ${iname(shop.items[+i])}`).join(", ") || "empty";
   let plan = {};
   try {
-    plan = await geminiJson(c, fill(BUYER_PROMPT, { shop: shop.shopName, area: shop.area || "", items: catalogueText(shop), cart: cartTxt, history: t.history }) + t.text);
+    plan = await geminiJson(c, fill(BUYER_PROMPT, { lang: replyLang(uiLang(t.b)), shop: shop.shopName, area: shop.area || "", items: catalogueText(shop), cart: cartTxt, history: t.history }) + t.text);
   } catch (e) { console.log("talk llm", String(e)); }
   plan = plan && typeof plan === "object" ? plan : {};
   const add = [];
@@ -1578,6 +1647,7 @@ async function talkApi(req, env, sid) {
 const TALK_CSS = `
 .fab{position:fixed;right:16px;bottom:22px;z-index:15;width:58px;height:58px;border-radius:50%;border:0;background:var(--ink);color:var(--bg);font-size:24px;cursor:pointer;box-shadow:0 12px 30px -10px rgba(60,30,0,.6)}
 body.hasbar .fab{bottom:92px}
+#co{padding-bottom:132px}
 .tk{position:fixed;left:0;right:0;bottom:0;z-index:30;padding:0 10px 10px;display:none}
 .tk.open{display:block}
 .sheet{max-width:560px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:24px;box-shadow:0 24px 60px -20px rgba(60,30,0,.5);padding:12px}
@@ -1592,12 +1662,13 @@ body.hasbar .fab{bottom:92px}
 .tkm.on{background:var(--acc);color:#1d1206;animation:tkp 1.1s infinite}
 .tkm.wait{opacity:.55}
 @keyframes tkp{50%{box-shadow:0 0 0 10px color-mix(in srgb,var(--acc) 25%,transparent)}}
+.tkc{margin-left:auto;margin-right:10px;font-size:14px;font-weight:600;color:var(--ink);background:var(--bg2);border-radius:999px;padding:5px 12px;text-decoration:none;white-space:nowrap}
 .tkx{background:none;border:0;color:var(--soft);font-size:22px;cursor:pointer;padding:0 4px}
 .tkh{display:flex;justify-content:space-between;align-items:center;padding:0 4px 4px;font:600 15px var(--disp)}
 `;
 const TALK_HTML = `<button class="fab" id="fab" aria-label="Talk">🎙</button>
-<div class="tk" id="tk"><div class="sheet"><div class="tkh"><span>Munshi</span><button class="tkx" id="tkx" aria-label="Close">×</button></div><div class="msgs" id="msgs"></div>
-<form class="tkr" id="tkf"><input id="tki" placeholder="type, or tap 🎙" autocomplete="off"><button class="tkm" id="tkm" type="button">🎙</button></form></div></div>`;
+<div class="tk" id="tk"><div class="sheet"><div class="tkh"><span>Munshi</span><a class="tkc" id="tkc" href="#checkout" hidden></a><button class="tkx" id="tkx" aria-label="Close">×</button></div><div class="msgs" id="msgs"></div>
+<form class="tkr" id="tkf"><input id="tki" data-tph="talkPh" placeholder="type, or tap 🎙" autocomplete="off"><button class="tkm" id="tkm" type="button">🎙</button></form></div></div>`;
 // Hands-free: listen, stop on a pause, send, speak the reply, listen again. Tap 🎙 to cut in or stop.
 const TALK_JS = `
 (() => {
@@ -1606,7 +1677,7 @@ let hist = [], live = false, rec = null, stream = null, ac = null, au = null, bu
 const say = (cls, text) => { const d = document.createElement("div"); d.className = "mb " + cls; d.textContent = text; $t("msgs").appendChild(d); $t("msgs").scrollTop = 1e9; };
 const state = s => { $t("tkm").className = "tkm " + s; $t("tkm").textContent = s === "on" ? "■" : s === "wait" ? "…" : "🎙"; };
 const b64 = blob => new Promise(r => { const f = new FileReader(); f.onload = () => r(String(f.result).split(",")[1] || ""); f.readAsDataURL(blob); });
-function open() { $t("tk").classList.add("open"); $t("fab").hidden = true; if (!$t("msgs").children.length) say("b", K.hello); }
+function open() { $t("tk").classList.add("open"); $t("fab").hidden = true; if (!$t("msgs").children.length) say("b", typeof K.hello === "function" ? K.hello() : K.hello); }
 function release() { if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; } }
 function close() { live = false; if (rec && rec.state === "recording") { rec.cancel = true; rec.stop(); } if (au) au.pause(); release(); state(""); $t("tk").classList.remove("open"); $t("fab").hidden = false; }
 function next() { state(""); if (queued) { const v = queued; queued = ""; return sendText(v); } if (live) listen(); else release(); }
@@ -1615,7 +1686,7 @@ async function send(body) {
   busy = true; state("wait");
   let r;
   try { r = await (await fetch(K.url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...body, history: hist.slice(-8), ...K.extra() }) })).json(); }
-  catch { r = { error: "Network problem. Try again." }; }
+  catch { r = { error: K.t("netErr", "Network problem. Try again.") }; }
   busy = false;
   if (r.heard) { say("u", r.heard); hist.push(["user", r.heard]); }
   if (r.error) { say("n", r.error); live = false; return next(); }
@@ -1629,7 +1700,7 @@ async function send(body) {
 async function listen() {
   if (busy) return;
   try { stream = stream || await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); }
-  catch { live = false; say("n", "Allow the microphone, or type."); return state(""); }
+  catch { live = false; say("n", K.t("micNo", "Allow the microphone, or type.")); return state(""); }
   ac = ac || new (window.AudioContext || window.webkitAudioContext)();
   if (ac.state === "suspended") ac.resume();
   const src = ac.createMediaStreamSource(stream), an = ac.createAnalyser(); an.fftSize = 1024; src.connect(an);
@@ -1658,6 +1729,7 @@ async function listen() {
 }
 $t("fab").onclick = () => { open(); live = true; listen(); };
 $t("tkx").onclick = close;
+$t("tkc").onclick = close;
 $t("tkm").onclick = () => {
   if (rec && rec.state === "recording") { live = false; rec.stop(); return; }
   if (au && !au.paused) { au.pause(); live = true; return listen(); }
@@ -1710,7 +1782,7 @@ async function manageRoute(req, env, url, ctx) {
     let plan;
     try {
       plan = await geminiJson(c, fill(OWNER_PROMPT, {
-        shop: shop.shopName, items: catalogueText(shop), history: t.history,
+        lang: replyLang(uiLang(t.b)), shop: shop.shopName, items: catalogueText(shop), history: t.history,
         today: JSON.stringify(await sales(c, sid, true)), alltime: JSON.stringify(await sales(c, sid)) }) + t.text);
     } catch (e) {
       plan = { actions: [{ type: "add", items: await parseItems(c, t.text) }], reply: "" };
@@ -1883,7 +1955,7 @@ loadOrders(); setInterval(loadOrders, 20000);
 function show(html) { const b = $("say"); b.innerHTML = html; b.style.display = "block"; }
 const esc = s => String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
 window.TALK = {
-  url: API.replace("?", "/voice?"), hello: "Namaste! Tell me what to change, or ask about sales 🎙",
+  url: API.replace("?", "/voice?"), hello: "Namaste! Tell me what to change, or ask about sales 🎙", t: (k, en) => en,
   extra: () => ({}),
   apply: (r, say) => { (r.notes || []).forEach(n => say("n", n)); if (r.shop) { S = r.shop; render(); $("save").textContent = "Saved ✓"; } },
 };
