@@ -1,0 +1,339 @@
+{
+  "category": "bakery",
+  "label": { "en": "Bakery", "hi": "बेकरी", "kn": "ಬೇಕರಿ", "ta": "பேக்கரி" },
+  "items": [
+    {
+      "id": "bakery-001",
+      "name": "White Bread",
+      "size": "400 g",
+      "group": "Bread & Buns",
+      "price": 45,
+      "local": { "hi": "सफ़ेद ब्रेड", "kn": "ಬಿಳಿ ಬ್ರೆಡ್", "ta": "வெள்ளை ரொட்டி" },
+      "aliases": ["bread", "white bread", "double roti"]
+    },
+    {
+      "id": "bakery-002",
+      "name": "Milk Bread",
+      "size": "400 g",
+      "group": "Bread & Buns",
+      "price": 50,
+      "local": { "hi": "मिल्क ब्रेड", "kn": "ಮಿಲ್ಕ್ ಬ್ರೆಡ್", "ta": "பால் ரொட்டி" },
+      "aliases": ["milk bread", "bread"]
+    },
+    {
+      "id": "bakery-003",
+      "name": "Brown Bread",
+      "size": "400 g",
+      "group": "Bread & Buns",
+      "price": 55,
+      "local": { "hi": "ब्राउन ब्रेड", "kn": "ಬ್ರೌನ್ ಬ್ರೆಡ್", "ta": "பிரவுன் ரொட்டி" },
+      "aliases": ["brown bread", "wheat bread", "bread"]
+    },
+    {
+      "id": "bakery-004",
+      "name": "Pav (Ladi Pav)",
+      "size": "6 pcs",
+      "group": "Bread & Buns",
+      "price": 35,
+      "local": { "hi": "लादी पाव", "kn": "ಪಾವ್", "ta": "பாவ்" },
+      "aliases": ["pav", "ladi pav", "pav bun"]
+    },
+    {
+      "id": "bakery-005",
+      "name": "Sweet Bun",
+      "size": "1 pc",
+      "group": "Bread & Buns",
+      "price": 15,
+      "local": { "hi": "मीठा बन", "kn": "ಸಿಹಿ ಬನ್", "ta": "இனிப்பு பன்" },
+      "aliases": ["bun", "sweet bun", "meetha bun"]
+    },
+    {
+      "id": "bakery-006",
+      "name": "Coconut Bun",
+      "size": "1 pc",
+      "group": "Bread & Buns",
+      "price": 20,
+      "local": { "hi": "नारियल बन", "kn": "ಕಾಯಿ ಬನ್", "ta": "தேங்காய் பன்" },
+      "aliases": ["coconut bun", "kai bun", "thengai bun", "bun"]
+    },
+    {
+      "id": "bakery-007",
+      "name": "Dilkush",
+      "size": "1 pc",
+      "group": "Bread & Buns",
+      "price": 35,
+      "local": { "hi": "दिलखुश", "kn": "ದಿಲ್‌ಖುಷ್", "ta": "தில்குஷ்" },
+      "aliases": ["dilkush", "dilkhush", "coconut sweet bread"]
+    },
+    {
+      "id": "bakery-008",
+      "name": "Dilpasand",
+      "size": "1 pc",
+      "group": "Bread & Buns",
+      "price": 35,
+      "local": { "hi": "दिलपसंद", "kn": "ದಿಲ್‌ಪಸಂದ್", "ta": "தில்பசந்த்" },
+      "aliases": ["dilpasand", "dil pasand", "sweet bread"]
+    },
+    {
+      "id": "bakery-009",
+      "name": "Milk Rusk",
+      "size": "300 g",
+      "group": "Rusk & Toast",
+      "price": 70,
+      "local": { "hi": "मिल्क रस्क", "kn": "ಮಿಲ್ಕ್ ರಸ್ಕ್", "ta": "பால் ரஸ்க்" },
+      "aliases": ["rusk", "milk rusk", "toast"]
+    },
+    {
+      "id": "bakery-010",
+      "name": "Elaichi Rusk",
+      "size": "300 g",
+      "group": "Rusk & Toast",
+      "price": 75,
+      "local": { "hi": "इलायची रस्क", "kn": "ಏಲಕ್ಕಿ ರಸ್ಕ್", "ta": "ஏலக்காய் ரஸ்க்" },
+      "aliases": ["elaichi rusk", "rusk", "cardamom rusk", "toast"]
+    },
+    {
+      "id": "bakery-011",
+      "name": "Cake Rusk",
+      "size": "250 g",
+      "group": "Rusk & Toast",
+      "price": 110,
+      "local": { "hi": "केक रस्क", "kn": "ಕೇಕ್ ರಸ್ಕ್", "ta": "கேக் ரஸ்க்" },
+      "aliases": ["cake rusk", "rusk"]
+    },
+    {
+      "id": "bakery-012",
+      "name": "Khari Biscuit",
+      "size": "200 g",
+      "group": "Rusk & Toast",
+      "price": 70,
+      "local": { "hi": "खारी बिस्किट", "kn": "ಖಾರಿ ಬಿಸ್ಕತ್", "ta": "காரி பிஸ்கட்" },
+      "aliases": ["khari", "khari biscuit", "puff biscuit"]
+    },
+    {
+      "id": "bakery-013",
+      "name": "Plum Cake",
+      "size": "500 g",
+      "group": "Cakes",
+      "price": 220,
+      "local": { "hi": "प्लम केक", "kn": "ಪ್ಲಮ್ ಕೇಕ್", "ta": "பிளம் கேக்" },
+      "aliases": ["plum cake", "fruit cake", "cake"]
+    },
+    {
+      "id": "bakery-014",
+      "name": "Black Forest Cake",
+      "size": "500 g",
+      "group": "Cakes",
+      "price": 400,
+      "local": { "hi": "ब्लैक फॉरेस्ट केक", "kn": "ಬ್ಲ್ಯಾಕ್ ಫಾರೆಸ್ಟ್ ಕೇಕ್", "ta": "பிளாக் ஃபாரஸ்ட் கேக்" },
+      "aliases": ["black forest", "cake", "birthday cake"]
+    },
+    {
+      "id": "bakery-015",
+      "name": "Pineapple Cake",
+      "size": "500 g",
+      "group": "Cakes",
+      "price": 380,
+      "local": { "hi": "पाइनएप्पल केक", "kn": "ಪೈನಾಪಲ್ ಕೇಕ್", "ta": "அன்னாசி கேக்" },
+      "aliases": ["pineapple cake", "cake", "birthday cake"]
+    },
+    {
+      "id": "bakery-016",
+      "name": "Chocolate Truffle Cake",
+      "size": "500 g",
+      "group": "Cakes",
+      "price": 500,
+      "local": { "hi": "चॉकलेट ट्रफल केक", "kn": "ಚಾಕೊಲೇಟ್ ಟ್ರಫಲ್ ಕೇಕ್", "ta": "சாக்லேட் ட்ரஃபிள் கேக்" },
+      "aliases": ["truffle", "chocolate cake", "cake"]
+    },
+    {
+      "id": "bakery-017",
+      "name": "Vanilla Tea Cake",
+      "size": "250 g",
+      "group": "Cakes",
+      "price": 90,
+      "local": { "hi": "वनीला टी केक", "kn": "ವೆನಿಲಾ ಟೀ ಕೇಕ್", "ta": "வெனிலா டீ கேக்" },
+      "aliases": ["tea cake", "sponge cake", "vanilla cake"]
+    },
+    {
+      "id": "bakery-018",
+      "name": "Black Forest Pastry",
+      "size": "1 pc",
+      "group": "Pastries",
+      "price": 60,
+      "local": { "hi": "ब्लैक फॉरेस्ट पेस्ट्री", "kn": "ಬ್ಲ್ಯಾಕ್ ಫಾರೆಸ್ಟ್ ಪೇಸ್ಟ್ರಿ", "ta": "பிளாக் ஃபாரஸ்ட் பேஸ்ட்ரி" },
+      "aliases": ["pastry", "black forest pastry"]
+    },
+    {
+      "id": "bakery-019",
+      "name": "Chocolate Brownie",
+      "size": "1 pc",
+      "group": "Pastries",
+      "price": 60,
+      "local": { "hi": "चॉकलेट ब्राउनी", "kn": "ಚಾಕೊಲೇಟ್ ಬ್ರೌನಿ", "ta": "சாக்லேட் பிரவுனி" },
+      "aliases": ["brownie", "chocolate brownie"]
+    },
+    {
+      "id": "bakery-020",
+      "name": "Honey Cake",
+      "size": "1 pc",
+      "group": "Pastries",
+      "price": 30,
+      "local": { "hi": "हनी केक", "kn": "ಹನಿ ಕೇಕ್", "ta": "ஹனி கேக்" },
+      "aliases": ["honey cake", "cake piece"]
+    },
+    {
+      "id": "bakery-021",
+      "name": "Osmania Biscuit",
+      "size": "250 g",
+      "group": "Cookies",
+      "price": 90,
+      "local": { "hi": "उस्मानिया बिस्किट", "kn": "ಉಸ್ಮಾನಿಯಾ ಬಿಸ್ಕತ್", "ta": "உஸ்மானியா பிஸ்கட்" },
+      "aliases": ["osmania", "osmania biscuit", "biscuit"]
+    },
+    {
+      "id": "bakery-022",
+      "name": "Coconut Biscuit",
+      "size": "250 g",
+      "group": "Cookies",
+      "price": 80,
+      "local": { "hi": "नारियल बिस्किट", "kn": "ಕೊಬ್ಬರಿ ಬಿಸ್ಕತ್", "ta": "தேங்காய் பிஸ்கட்" },
+      "aliases": ["coconut biscuit", "kobbari biscuit", "biscuit"]
+    },
+    {
+      "id": "bakery-023",
+      "name": "Butter Cookies",
+      "size": "250 g",
+      "group": "Cookies",
+      "price": 100,
+      "local": { "hi": "बटर कुकीज़", "kn": "ಬೆಣ್ಣೆ ಬಿಸ್ಕತ್", "ta": "வெண்ணெய் பிஸ்கட்" },
+      "aliases": ["butter cookies", "butter biscuit", "benne biscuit", "cookies"]
+    },
+    {
+      "id": "bakery-024",
+      "name": "Nankhatai",
+      "size": "250 g",
+      "group": "Cookies",
+      "price": 100,
+      "local": { "hi": "नानखटाई", "kn": "ನಾನ್‌ಖಟಾಯಿ", "ta": "நான்கட்டாய்" },
+      "aliases": ["nankhatai", "nan khatai", "cookies"]
+    },
+    {
+      "id": "bakery-025",
+      "name": "Khara Biscuit",
+      "size": "250 g",
+      "group": "Cookies",
+      "price": 80,
+      "local": { "hi": "मसाला बिस्किट", "kn": "ಖಾರ ಬಿಸ್ಕತ್", "ta": "கார பிஸ்கட்" },
+      "aliases": ["khara biscuit", "masala biscuit", "salt biscuit"]
+    },
+    {
+      "id": "bakery-026",
+      "name": "Veg Puff",
+      "size": "1 pc",
+      "group": "Puffs & Savouries",
+      "price": 25,
+      "local": { "hi": "वेज पफ", "kn": "ವೆಜ್ ಪಫ್", "ta": "வெஜ் பஃப்" },
+      "aliases": ["veg puff", "puff", "puffs"]
+    },
+    {
+      "id": "bakery-027",
+      "name": "Egg Puff",
+      "size": "1 pc",
+      "group": "Puffs & Savouries",
+      "price": 30,
+      "local": { "hi": "अंडा पफ", "kn": "ಮೊಟ್ಟೆ ಪಫ್", "ta": "முட்டை பஃப்" },
+      "aliases": ["egg puff", "puff", "motte puff"]
+    },
+    {
+      "id": "bakery-028",
+      "name": "Chicken Puff",
+      "size": "1 pc",
+      "group": "Puffs & Savouries",
+      "price": 40,
+      "local": { "hi": "चिकन पफ", "kn": "ಚಿಕನ್ ಪಫ್", "ta": "சிக்கன் பஃப்" },
+      "aliases": ["chicken puff", "puff"]
+    },
+    {
+      "id": "bakery-029",
+      "name": "Veg Samosa",
+      "size": "1 pc",
+      "group": "Puffs & Savouries",
+      "price": 15,
+      "local": { "hi": "समोसा", "kn": "ಸಮೋಸ", "ta": "சமோசா" },
+      "aliases": ["samosa", "veg samosa"]
+    },
+    {
+      "id": "bakery-030",
+      "name": "Mysore Pak",
+      "size": "250 g",
+      "group": "Sweets & Namkeen",
+      "price": 150,
+      "local": { "hi": "मैसूर पाक", "kn": "ಮೈಸೂರು ಪಾಕ್", "ta": "மைசூர் பாக்" },
+      "aliases": ["mysore pak", "mysorepak", "sweet"]
+    },
+    {
+      "id": "bakery-031",
+      "name": "Kaju Katli",
+      "size": "250 g",
+      "group": "Sweets & Namkeen",
+      "price": 300,
+      "local": { "hi": "काजू कतली", "kn": "ಕಾಜು ಕತ್ಲಿ", "ta": "காஜு கத்லி" },
+      "aliases": ["kaju katli", "kaju barfi", "sweet"]
+    },
+    {
+      "id": "bakery-032",
+      "name": "Gulab Jamun",
+      "size": "500 g",
+      "group": "Sweets & Namkeen",
+      "price": 160,
+      "local": { "hi": "गुलाब जामुन", "kn": "ಜಾಮೂನು", "ta": "குலாப் ஜாமூன்" },
+      "aliases": ["gulab jamun", "jamun", "sweet"]
+    },
+    {
+      "id": "bakery-033",
+      "name": "Khara Mixture",
+      "size": "250 g",
+      "group": "Sweets & Namkeen",
+      "price": 70,
+      "local": { "hi": "नमकीन मिक्सचर", "kn": "ಖಾರ ಮಿಕ್ಸ್ಚರ್", "ta": "மிக்சர்" },
+      "aliases": ["mixture", "khara mixture", "namkeen", "chiwda"]
+    },
+    {
+      "id": "bakery-034",
+      "name": "Kodubale",
+      "size": "250 g",
+      "group": "Sweets & Namkeen",
+      "price": 80,
+      "local": { "hi": "कोडुबले", "kn": "ಕೋಡುಬಳೆ", "ta": "கொடுபளே" },
+      "aliases": ["kodubale", "kodbale", "ring murukku"]
+    },
+    {
+      "id": "bakery-035",
+      "name": "Chakli (Murukku)",
+      "size": "250 g",
+      "group": "Sweets & Namkeen",
+      "price": 80,
+      "local": { "hi": "चकली", "kn": "ಚಕ್ಕುಲಿ", "ta": "முறுக்கு" },
+      "aliases": ["chakli", "chakkuli", "murukku"]
+    },
+    {
+      "id": "bakery-036",
+      "name": "Congress Kadlekai",
+      "size": "250 g",
+      "group": "Sweets & Namkeen",
+      "price": 80,
+      "local": { "hi": "मसाला मूंगफली", "kn": "ಕಾಂಗ್ರೆಸ್ ಕಡಲೆಕಾಯಿ", "ta": "காங்கிரஸ் கடலை" },
+      "aliases": ["congress kadlekai", "masala peanuts", "kadlekai", "peanuts"]
+    },
+    {
+      "id": "bakery-037",
+      "name": "Banana Chips",
+      "size": "250 g",
+      "group": "Sweets & Namkeen",
+      "price": 100,
+      "local": { "hi": "केला चिप्स", "kn": "ಬಾಳೆಕಾಯಿ ಚಿಪ್ಸ್", "ta": "வாழைக்காய் சிப்ஸ்" },
+      "aliases": ["banana chips", "chips", "balekai chips", "nendran chips"]
+    }
+  ]
+}

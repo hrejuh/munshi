@@ -1,0 +1,276 @@
+{
+  "category": "stationery",
+  "label": { "en": "Stationery", "hi": "स्टेशनरी", "kn": "ಸ್ಟೇಷನರಿ", "ta": "எழுதுபொருள் கடை" },
+  "items": [
+    {
+      "id": "stationery-001",
+      "name": "Classmate Long Notebook (Single Line)",
+      "size": "172 pages",
+      "group": "Notebooks",
+      "price": 70,
+      "local": { "hi": "क्लासमेट नोटबुक (सिंगल लाइन)", "kn": "ಕ್ಲಾಸ್‌ಮೇಟ್ ನೋಟ್‌ಬುಕ್ (ಸಿಂಗಲ್ ಲೈನ್)", "ta": "கிளாஸ்மேட் நோட்டு (சிங்கிள் லைன்)" },
+      "aliases": ["classmate", "notebook", "long book", "single line", "ruled"]
+    },
+    {
+      "id": "stationery-002",
+      "name": "Classmate Long Notebook (Unruled)",
+      "size": "172 pages",
+      "group": "Notebooks",
+      "price": 70,
+      "local": { "hi": "क्लासमेट नोटबुक (बिना लाइन)", "kn": "ಕ್ಲಾಸ್‌ಮೇಟ್ ನೋಟ್‌ಬುಕ್ (ಗೆರೆ ಇಲ್ಲದ)", "ta": "கிளாஸ்மேட் நோட்டு (கோடு இல்லாதது)" },
+      "aliases": ["classmate", "unruled", "plain notebook", "notebook"]
+    },
+    {
+      "id": "stationery-003",
+      "name": "Classmate Four Line Notebook",
+      "size": "120 pages",
+      "group": "Notebooks",
+      "price": 40,
+      "local": { "hi": "क्लासमेट चार लाइन नोटबुक", "kn": "ಕ್ಲಾಸ್‌ಮೇಟ್ ನಾಲ್ಕು ಗೆರೆ ನೋಟ್‌ಬುಕ್", "ta": "கிளாஸ்மேட் நான்கு கோடு நோட்டு" },
+      "aliases": ["four line", "classmate", "english notebook", "notebook"]
+    },
+    {
+      "id": "stationery-004",
+      "name": "Classmate Square Ruled Notebook",
+      "size": "172 pages",
+      "group": "Notebooks",
+      "price": 70,
+      "local": { "hi": "क्लासमेट चौकोर नोटबुक", "kn": "ಕ್ಲಾಸ್‌ಮೇಟ್ ಚೌಕ ಗೆರೆ ನೋಟ್‌ಬುಕ್", "ta": "கிளாஸ்மேட் கட்டம் போட்ட நோட்டு" },
+      "aliases": ["square", "maths notebook", "classmate", "notebook"]
+    },
+    {
+      "id": "stationery-005",
+      "name": "Classmate Practical Notebook",
+      "size": "100 pages",
+      "group": "Notebooks",
+      "price": 80,
+      "local": { "hi": "क्लासमेट प्रैक्टिकल नोटबुक", "kn": "ಕ್ಲಾಸ್‌ಮೇಟ್ ಪ್ರಾಕ್ಟಿಕಲ್ ನೋಟ್‌ಬುಕ್", "ta": "கிளாஸ்மேட் பிராக்டிகல் நோட்டு" },
+      "aliases": ["practical", "record book", "lab notebook", "classmate"]
+    },
+    {
+      "id": "stationery-006",
+      "name": "Reynolds 045 Fine Carbure Pen (Blue)",
+      "size": "1 pc",
+      "group": "Pens",
+      "price": 10,
+      "local": { "hi": "रेनॉल्ड्स नीला पेन", "kn": "ರೆನಾಲ್ಡ್ಸ್ ನೀಲಿ ಪೆನ್ನು", "ta": "ரெனால்ட்ஸ் நீல பேனா" },
+      "aliases": ["reynolds", "pen", "blue pen", "ball pen"]
+    },
+    {
+      "id": "stationery-007",
+      "name": "Cello Butterflow Pen (Blue)",
+      "size": "1 pc",
+      "group": "Pens",
+      "price": 10,
+      "local": { "hi": "सेलो बटरफ्लो पेन", "kn": "ಸೆಲ್ಲೋ ಬಟರ್‌ಫ್ಲೋ ಪೆನ್ನು", "ta": "செல்லோ பட்டர்ஃப்ளோ பேனா" },
+      "aliases": ["cello", "butterflow", "pen", "ball pen"]
+    },
+    {
+      "id": "stationery-008",
+      "name": "Linc Pentonic Pen (Black)",
+      "size": "1 pc",
+      "group": "Pens",
+      "price": 10,
+      "local": { "hi": "लिंक पेंटोनिक काला पेन", "kn": "ಲಿಂಕ್ ಪೆಂಟೋನಿಕ್ ಕಪ್ಪು ಪೆನ್ನು", "ta": "லிங்க் பெண்டோனிக் கருப்பு பேனா" },
+      "aliases": ["pentonic", "linc", "black pen", "pen"]
+    },
+    {
+      "id": "stationery-009",
+      "name": "Classmate Octane Gel Pen",
+      "size": "1 pc",
+      "group": "Pens",
+      "price": 10,
+      "local": { "hi": "क्लासमेट ऑक्टेन जेल पेन", "kn": "ಕ್ಲಾಸ್‌ಮೇಟ್ ಆಕ್ಟೇನ್ ಜೆಲ್ ಪೆನ್ನು", "ta": "கிளாஸ்மேட் ஆக்டேன் ஜெல் பேனா" },
+      "aliases": ["octane", "gel pen", "classmate", "pen"]
+    },
+    {
+      "id": "stationery-010",
+      "name": "Pilot V5 Liquid Ink Pen",
+      "size": "1 pc",
+      "group": "Pens",
+      "price": 70,
+      "local": { "hi": "पायलट वी5 पेन", "kn": "ಪೈಲಟ್ ವಿ5 ಪೆನ್ನು", "ta": "பைலட் வி5 பேனா" },
+      "aliases": ["pilot", "v5", "pilot pen", "ink pen"]
+    },
+    {
+      "id": "stationery-011",
+      "name": "Faber-Castell Textliner Highlighter",
+      "size": "1 pc",
+      "group": "Pens",
+      "price": 30,
+      "local": { "hi": "फैबर-कास्टेल हाइलाइटर", "kn": "ಫೇಬರ್-ಕ್ಯಾಸ್ಟೆಲ್ ಹೈಲೈಟರ್", "ta": "ஃபேபர்-காஸ்டெல் ஹைலைட்டர்" },
+      "aliases": ["highlighter", "textliner", "faber castell"]
+    },
+    {
+      "id": "stationery-012",
+      "name": "Apsara Platinum Pencils",
+      "size": "10 pcs",
+      "group": "Pencils & Erasers",
+      "price": 60,
+      "local": { "hi": "अप्सरा पेंसिल", "kn": "ಅಪ್ಸರಾ ಪೆನ್ಸಿಲ್", "ta": "அப்சரா பென்சில்" },
+      "aliases": ["apsara", "pencil", "platinum pencil"]
+    },
+    {
+      "id": "stationery-013",
+      "name": "Nataraj 621 HB Pencils",
+      "size": "10 pcs",
+      "group": "Pencils & Erasers",
+      "price": 50,
+      "local": { "hi": "नटराज पेंसिल", "kn": "ನಟರಾಜ್ ಪೆನ್ಸಿಲ್", "ta": "நடராஜ் பென்சில்" },
+      "aliases": ["nataraj", "pencil", "hb pencil"]
+    },
+    {
+      "id": "stationery-014",
+      "name": "Apsara Non-Dust Eraser",
+      "size": "1 pc",
+      "group": "Pencils & Erasers",
+      "price": 5,
+      "local": { "hi": "अप्सरा रबड़", "kn": "ಅಪ್ಸರಾ ರಬ್ಬರ್", "ta": "அப்சரா அழிப்பான்" },
+      "aliases": ["eraser", "rubber", "apsara eraser"]
+    },
+    {
+      "id": "stationery-015",
+      "name": "Nataraj Sharpener",
+      "size": "1 pc",
+      "group": "Pencils & Erasers",
+      "price": 5,
+      "local": { "hi": "नटराज शार्पनर", "kn": "ನಟರಾಜ್ ಶಾರ್ಪನರ್", "ta": "நடராஜ் ஷார்ப்னர்" },
+      "aliases": ["sharpener", "shaver", "nataraj"]
+    },
+    {
+      "id": "stationery-016",
+      "name": "Camlin Geometry Box",
+      "size": "1 pc",
+      "group": "School Supplies",
+      "price": 120,
+      "local": { "hi": "कैमलिन ज्योमेट्री बॉक्स", "kn": "ಕ್ಯಾಮ್ಲಿನ್ ಜಾಮಿಟ್ರಿ ಬಾಕ್ಸ್", "ta": "கேம்லின் ஜியோமெட்ரி பாக்ஸ்" },
+      "aliases": ["geometry box", "compass box", "camlin", "instrument box"]
+    },
+    {
+      "id": "stationery-017",
+      "name": "Plastic Scale 30 cm",
+      "size": "1 pc",
+      "group": "School Supplies",
+      "price": 15,
+      "local": { "hi": "प्लास्टिक स्केल", "kn": "ಪ್ಲಾಸ್ಟಿಕ್ ಸ್ಕೇಲ್", "ta": "பிளாஸ்டிக் ஸ்கேல்" },
+      "aliases": ["scale", "ruler", "foot scale"]
+    },
+    {
+      "id": "stationery-018",
+      "name": "Brown Paper Book Cover",
+      "size": "5 sheets",
+      "group": "School Supplies",
+      "price": 25,
+      "local": { "hi": "ब्राउन पेपर कवर", "kn": "ಬ್ರೌನ್ ಪೇಪರ್ ಕವರ್", "ta": "பிரவுன் பேப்பர் அட்டை" },
+      "aliases": ["brown paper", "book cover", "cover paper"]
+    },
+    {
+      "id": "stationery-019",
+      "name": "White Chart Paper",
+      "size": "1 sheet",
+      "group": "Art & Craft",
+      "price": 10,
+      "local": { "hi": "सफ़ेद चार्ट पेपर", "kn": "ಬಿಳಿ ಚಾರ್ಟ್ ಪೇಪರ್", "ta": "வெள்ளை சார்ட் பேப்பர்" },
+      "aliases": ["chart paper", "chart", "white chart"]
+    },
+    {
+      "id": "stationery-020",
+      "name": "Fevicol MR",
+      "size": "50 g",
+      "group": "Art & Craft",
+      "price": 30,
+      "local": { "hi": "फेविकोल", "kn": "ಫೆವಿಕಾಲ್", "ta": "ஃபெவிகால்" },
+      "aliases": ["fevicol", "glue", "gum"]
+    },
+    {
+      "id": "stationery-021",
+      "name": "Fevistik Glue Stick",
+      "size": "8 g",
+      "group": "Art & Craft",
+      "price": 25,
+      "local": { "hi": "फेविस्टिक", "kn": "ಫೆವಿಸ್ಟಿಕ್", "ta": "ஃபெவிஸ்டிக்" },
+      "aliases": ["fevistik", "glue stick", "gum stick"]
+    },
+    {
+      "id": "stationery-022",
+      "name": "Camlin Wax Crayons",
+      "size": "12 shades",
+      "group": "Art & Craft",
+      "price": 35,
+      "local": { "hi": "कैमलिन क्रेयॉन्स", "kn": "ಕ್ಯಾಮ್ಲಿನ್ ಕ್ರೇಯಾನ್ಸ್", "ta": "கேம்லின் கிரேயான்ஸ்" },
+      "aliases": ["crayons", "wax crayons", "camlin", "colours"]
+    },
+    {
+      "id": "stationery-023",
+      "name": "Faber-Castell Colour Pencils",
+      "size": "12 shades",
+      "group": "Art & Craft",
+      "price": 110,
+      "local": { "hi": "फैबर-कास्टेल रंगीन पेंसिल", "kn": "ಫೇಬರ್-ಕ್ಯಾಸ್ಟೆಲ್ ಬಣ್ಣದ ಪೆನ್ಸಿಲ್", "ta": "ஃபேபர்-காஸ்டெல் கலர் பென்சில்" },
+      "aliases": ["colour pencils", "color pencil", "faber castell"]
+    },
+    {
+      "id": "stationery-024",
+      "name": "Camlin Sketch Pens",
+      "size": "12 shades",
+      "group": "Art & Craft",
+      "price": 50,
+      "local": { "hi": "कैमलिन स्केच पेन", "kn": "ಕ್ಯಾಮ್ಲಿನ್ ಸ್ಕೆಚ್ ಪೆನ್ನು", "ta": "கேம்லின் ஸ்கெட்ச் பேனா" },
+      "aliases": ["sketch pen", "sketch pens", "camlin"]
+    },
+    {
+      "id": "stationery-025",
+      "name": "Scissors",
+      "size": "1 pc",
+      "group": "Art & Craft",
+      "price": 40,
+      "local": { "hi": "कैंची", "kn": "ಕತ್ತರಿ", "ta": "கத்தரிக்கோல்" },
+      "aliases": ["scissors", "kainchi", "kattari", "kathirikkol"]
+    },
+    {
+      "id": "stationery-026",
+      "name": "Cello Tape (1 inch)",
+      "size": "1 roll",
+      "group": "Art & Craft",
+      "price": 20,
+      "local": { "hi": "सेलो टेप", "kn": "ಸೆಲ್ಲೋ ಟೇಪ್", "ta": "செல்லோ டேப்" },
+      "aliases": ["cello tape", "tape", "sellotape"]
+    },
+    {
+      "id": "stationery-027",
+      "name": "Plastic Button File",
+      "size": "1 pc",
+      "group": "Office & Files",
+      "price": 20,
+      "local": { "hi": "बटन फ़ाइल", "kn": "ಬಟನ್ ಫೈಲ್", "ta": "பட்டன் ஃபைல்" },
+      "aliases": ["file", "button file", "document file"]
+    },
+    {
+      "id": "stationery-028",
+      "name": "JK Copier A4 Paper",
+      "size": "500 sheets",
+      "group": "Office & Files",
+      "price": 340,
+      "local": { "hi": "जेके कॉपियर A4 पेपर", "kn": "ಜೆಕೆ ಕಾಪಿಯರ್ A4 ಪೇಪರ್", "ta": "ஜேகே காப்பியர் A4 பேப்பர்" },
+      "aliases": ["a4 paper", "a4 sheet", "printing paper", "jk copier", "bundle"]
+    },
+    {
+      "id": "stationery-029",
+      "name": "Kangaro Stapler No. 10",
+      "size": "1 pc",
+      "group": "Office & Files",
+      "price": 70,
+      "local": { "hi": "कंगारू स्टेपलर", "kn": "ಕಾಂಗರೂ ಸ್ಟೇಪ್ಲರ್", "ta": "கங்காரு ஸ்டேப்லர்" },
+      "aliases": ["stapler", "kangaro", "stapler machine"]
+    },
+    {
+      "id": "stationery-030",
+      "name": "Stapler Pins No. 10",
+      "size": "1 box",
+      "group": "Office & Files",
+      "price": 15,
+      "local": { "hi": "स्टेपलर पिन", "kn": "ಸ್ಟೇಪ್ಲರ್ ಪಿನ್", "ta": "ஸ்டேப்லர் பின்" },
+      "aliases": ["stapler pin", "pins", "staple"]
+    }
+  ]
+}

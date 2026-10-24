@@ -1,0 +1,1122 @@
+{
+  "category": "kirana",
+  "label": { "en": "Kirana / Grocery", "hi": "किराना", "kn": "ದಿನಸಿ ಅಂಗಡಿ", "ta": "மளிகைக் கடை" },
+  "items": [
+    {
+      "id": "kirana-001",
+      "name": "Aashirvaad Whole Wheat Atta",
+      "size": "5 kg",
+      "group": "Staples",
+      "price": 265,
+      "local": { "hi": "आशीर्वाद आटा", "kn": "ಆಶೀರ್ವಾದ್ ಗೋಧಿ ಹಿಟ್ಟು", "ta": "ஆசீர்வாத் கோதுமை மாவு" },
+      "aliases": ["atta", "gehu atta", "godhi hittu", "wheat flour", "aashirvaad"]
+    },
+    {
+      "id": "kirana-002",
+      "name": "Aashirvaad Whole Wheat Atta",
+      "size": "10 kg",
+      "group": "Staples",
+      "price": 520,
+      "local": { "hi": "आशीर्वाद आटा", "kn": "ಆಶೀರ್ವಾದ್ ಗೋಧಿ ಹಿಟ್ಟು", "ta": "ஆசீர்வாத் கோதுமை மாவு" },
+      "aliases": ["atta", "aashirvaad", "wheat flour", "godhi hittu", "ten kg atta"]
+    },
+    {
+      "id": "kirana-003",
+      "name": "Pillsbury Chakki Fresh Atta",
+      "size": "5 kg",
+      "group": "Staples",
+      "price": 255,
+      "local": { "hi": "पिल्सबरी चक्की आटा", "kn": "ಪಿಲ್ಸ್‌ಬರಿ ಗೋಧಿ ಹಿಟ್ಟು", "ta": "பில்ஸ்பரி கோதுமை மாவு" },
+      "aliases": ["pillsbury", "atta", "chakki atta", "wheat flour"]
+    },
+    {
+      "id": "kirana-004",
+      "name": "Sona Masoori Raw Rice",
+      "size": "5 kg",
+      "group": "Staples",
+      "price": 360,
+      "local": { "hi": "सोना मसूरी चावल", "kn": "ಸೋನಾ ಮಸೂರಿ ಅಕ್ಕಿ", "ta": "சோனா மசூரி அரிசி" },
+      "aliases": ["rice", "sona masoori", "akki", "arisi", "chawal"]
+    },
+    {
+      "id": "kirana-005",
+      "name": "India Gate Basmati Rice Classic",
+      "size": "1 kg",
+      "group": "Staples",
+      "price": 210,
+      "local": { "hi": "इंडिया गेट बासमती चावल", "kn": "ಇಂಡಿಯಾ ಗೇಟ್ ಬಾಸ್ಮತಿ ಅಕ್ಕಿ", "ta": "இந்தியா கேட் பாசுமதி அரிசி" },
+      "aliases": ["basmati", "india gate", "rice", "biryani rice"]
+    },
+    {
+      "id": "kirana-006",
+      "name": "Idli Rice",
+      "size": "5 kg",
+      "group": "Staples",
+      "price": 280,
+      "local": { "hi": "इडली चावल", "kn": "ಇಡ್ಲಿ ಅಕ್ಕಿ", "ta": "இட்லி அரிசி" },
+      "aliases": ["idli rice", "idli akki", "idli arisi", "rice"]
+    },
+    {
+      "id": "kirana-007",
+      "name": "Tata Sampann Toor Dal",
+      "size": "1 kg",
+      "group": "Staples",
+      "price": 185,
+      "local": { "hi": "टाटा संपन्न तूर दाल", "kn": "ಟಾಟಾ ಸಂಪನ್ನ ತೊಗರಿ ಬೇಳೆ", "ta": "டாடா சம்பன் துவரம் பருப்பு" },
+      "aliases": ["toor dal", "tata sampann", "togari bele", "thuvaram paruppu", "arhar dal"]
+    },
+    {
+      "id": "kirana-008",
+      "name": "Moong Dal",
+      "size": "1 kg",
+      "group": "Staples",
+      "price": 140,
+      "local": { "hi": "मूंग दाल", "kn": "ಹೆಸರು ಬೇಳೆ", "ta": "பாசிப் பருப்பு" },
+      "aliases": ["moong dal", "hesaru bele", "pasi paruppu", "green gram dal"]
+    },
+    {
+      "id": "kirana-009",
+      "name": "Urad Dal",
+      "size": "1 kg",
+      "group": "Staples",
+      "price": 150,
+      "local": { "hi": "उड़द दाल", "kn": "ಉದ್ದಿನ ಬೇಳೆ", "ta": "உளுத்தம் பருப்பு" },
+      "aliases": ["urad dal", "uddina bele", "ulundu", "black gram"]
+    },
+    {
+      "id": "kirana-010",
+      "name": "Chana Dal",
+      "size": "1 kg",
+      "group": "Staples",
+      "price": 100,
+      "local": { "hi": "चना दाल", "kn": "ಕಡಲೆ ಬೇಳೆ", "ta": "கடலைப் பருப்பு" },
+      "aliases": ["chana dal", "kadale bele", "kadalai paruppu", "bengal gram"]
+    },
+    {
+      "id": "kirana-011",
+      "name": "Kabuli Chana",
+      "size": "1 kg",
+      "group": "Staples",
+      "price": 160,
+      "local": { "hi": "काबुली चना", "kn": "ಕಾಬೂಲಿ ಕಡಲೆ", "ta": "வெள்ளை கொண்டைக்கடலை" },
+      "aliases": ["kabuli chana", "chole", "channa", "kadale", "chickpeas"]
+    },
+    {
+      "id": "kirana-012",
+      "name": "Groundnuts (Peanuts)",
+      "size": "500 g",
+      "group": "Staples",
+      "price": 80,
+      "local": { "hi": "मूंगफली", "kn": "ಕಡಲೆಕಾಯಿ ಬೀಜ", "ta": "நிலக்கடலை" },
+      "aliases": ["groundnut", "peanuts", "moongphali", "kadlekai beeja", "verkadalai"]
+    },
+    {
+      "id": "kirana-013",
+      "name": "Tata Salt",
+      "size": "1 kg",
+      "group": "Staples",
+      "price": 30,
+      "local": { "hi": "टाटा नमक", "kn": "ಟಾಟಾ ಉಪ್ಪು", "ta": "டாடா உப்பு" },
+      "aliases": ["salt", "tata salt", "namak", "uppu"]
+    },
+    {
+      "id": "kirana-014",
+      "name": "Sugar",
+      "size": "1 kg",
+      "group": "Staples",
+      "price": 48,
+      "local": { "hi": "चीनी", "kn": "ಸಕ್ಕರೆ", "ta": "சர்க்கரை" },
+      "aliases": ["sugar", "cheeni", "sakkare", "sakkarai"]
+    },
+    {
+      "id": "kirana-015",
+      "name": "Jaggery",
+      "size": "1 kg",
+      "group": "Staples",
+      "price": 70,
+      "local": { "hi": "गुड़", "kn": "ಬೆಲ್ಲ", "ta": "வெல்லம்" },
+      "aliases": ["jaggery", "gud", "bella", "vellam"]
+    },
+    {
+      "id": "kirana-016",
+      "name": "Maida",
+      "size": "1 kg",
+      "group": "Staples",
+      "price": 55,
+      "local": { "hi": "मैदा", "kn": "ಮೈದಾ ಹಿಟ್ಟು", "ta": "மைதா மாவு" },
+      "aliases": ["maida", "all purpose flour", "maida hittu"]
+    },
+    {
+      "id": "kirana-017",
+      "name": "Bombay Rava (Sooji)",
+      "size": "1 kg",
+      "group": "Staples",
+      "price": 60,
+      "local": { "hi": "सूजी", "kn": "ಬಾಂಬೆ ರವೆ", "ta": "ரவை" },
+      "aliases": ["rava", "sooji", "suji", "bombay rava", "semolina"]
+    },
+    {
+      "id": "kirana-018",
+      "name": "Besan",
+      "size": "500 g",
+      "group": "Staples",
+      "price": 65,
+      "local": { "hi": "बेसन", "kn": "ಕಡಲೆ ಹಿಟ್ಟು", "ta": "கடலை மாவு" },
+      "aliases": ["besan", "kadale hittu", "kadalai maavu", "gram flour"]
+    },
+    {
+      "id": "kirana-019",
+      "name": "Ragi Flour",
+      "size": "1 kg",
+      "group": "Staples",
+      "price": 70,
+      "local": { "hi": "रागी आटा", "kn": "ರಾಗಿ ಹಿಟ್ಟು", "ta": "கேழ்வரகு மாவு" },
+      "aliases": ["ragi", "ragi hittu", "ragi flour", "kezhvaragu", "finger millet"]
+    },
+    {
+      "id": "kirana-020",
+      "name": "Poha (Thick)",
+      "size": "500 g",
+      "group": "Staples",
+      "price": 40,
+      "local": { "hi": "पोहा", "kn": "ಅವಲಕ್ಕಿ", "ta": "அவல்" },
+      "aliases": ["poha", "avalakki", "aval", "beaten rice"]
+    },
+    {
+      "id": "kirana-021",
+      "name": "Fortune Sunflower Oil",
+      "size": "1 L",
+      "group": "Oil & Ghee",
+      "price": 160,
+      "local": { "hi": "फॉर्च्यून सूरजमुखी तेल", "kn": "ಫಾರ್ಚೂನ್ ಸೂರ್ಯಕಾಂತಿ ಎಣ್ಣೆ", "ta": "ஃபார்ச்சூன் சூரியகாந்தி எண்ணெய்" },
+      "aliases": ["fortune", "sunflower oil", "oil", "tel", "enne", "ennai"]
+    },
+    {
+      "id": "kirana-022",
+      "name": "Freedom Sunflower Oil",
+      "size": "1 L",
+      "group": "Oil & Ghee",
+      "price": 155,
+      "local": { "hi": "फ्रीडम सूरजमुखी तेल", "kn": "ಫ್ರೀಡಂ ಸೂರ್ಯಕಾಂತಿ ಎಣ್ಣೆ", "ta": "ஃப்ரீடம் சூரியகாந்தி எண்ணெய்" },
+      "aliases": ["freedom", "sunflower oil", "oil", "enne"]
+    },
+    {
+      "id": "kirana-023",
+      "name": "Groundnut Oil",
+      "size": "1 L",
+      "group": "Oil & Ghee",
+      "price": 200,
+      "local": { "hi": "मूंगफली तेल", "kn": "ಕಡಲೆಕಾಯಿ ಎಣ್ಣೆ", "ta": "கடலை எண்ணெய்" },
+      "aliases": ["groundnut oil", "peanut oil", "kadalekai enne", "kadalai ennai"]
+    },
+    {
+      "id": "kirana-024",
+      "name": "Idhayam Sesame Oil",
+      "size": "500 ml",
+      "group": "Oil & Ghee",
+      "price": 210,
+      "local": { "hi": "इदयम तिल का तेल", "kn": "ಇದಯಂ ಎಳ್ಳೆಣ್ಣೆ", "ta": "இதயம் நல்லெண்ணெய்" },
+      "aliases": ["idhayam", "sesame oil", "gingelly oil", "nallennai", "ellenne", "til tel"]
+    },
+    {
+      "id": "kirana-025",
+      "name": "Fortune Kachi Ghani Mustard Oil",
+      "size": "1 L",
+      "group": "Oil & Ghee",
+      "price": 185,
+      "local": { "hi": "फॉर्च्यून कच्ची घानी सरसों तेल", "kn": "ಫಾರ್ಚೂನ್ ಸಾಸಿವೆ ಎಣ್ಣೆ", "ta": "ஃபார்ச்சூன் கடுகு எண்ணெய்" },
+      "aliases": ["mustard oil", "sarson tel", "fortune", "kachi ghani"]
+    },
+    {
+      "id": "kirana-026",
+      "name": "Nandini Ghee",
+      "size": "500 ml",
+      "group": "Oil & Ghee",
+      "price": 340,
+      "local": { "hi": "नंदिनी घी", "kn": "ನಂದಿನಿ ತುಪ್ಪ", "ta": "நந்தினி நெய்" },
+      "aliases": ["nandini ghee", "ghee", "tuppa", "nei", "nandini"]
+    },
+    {
+      "id": "kirana-027",
+      "name": "Amul Pure Ghee",
+      "size": "1 L",
+      "group": "Oil & Ghee",
+      "price": 650,
+      "local": { "hi": "अमूल घी", "kn": "ಅಮುಲ್ ತುಪ್ಪ", "ta": "அமுல் நெய்" },
+      "aliases": ["amul ghee", "ghee", "amul", "tuppa", "nei"]
+    },
+    {
+      "id": "kirana-028",
+      "name": "Dalda Vanaspati",
+      "size": "1 L",
+      "group": "Oil & Ghee",
+      "price": 155,
+      "local": { "hi": "डालडा वनस्पति", "kn": "ಡಾಲ್ಡಾ ವನಸ್ಪತಿ", "ta": "டால்டா வனஸ்பதி" },
+      "aliases": ["dalda", "vanaspati", "vanaspati ghee"]
+    },
+    {
+      "id": "kirana-029",
+      "name": "MDH Deggi Mirch",
+      "size": "100 g",
+      "group": "Spices",
+      "price": 95,
+      "local": { "hi": "एमडीएच देगी मिर्च", "kn": "ಎಂಡಿಎಚ್ ದೇಗಿ ಮಿರ್ಚ್", "ta": "எம்டிஎச் தேகி மிர்ச்" },
+      "aliases": ["mdh", "deggi mirch", "chilli powder", "lal mirch"]
+    },
+    {
+      "id": "kirana-030",
+      "name": "MDH Chana Masala",
+      "size": "100 g",
+      "group": "Spices",
+      "price": 90,
+      "local": { "hi": "एमडीएच चना मसाला", "kn": "ಎಂಡಿಎಚ್ ಚನಾ ಮಸಾಲಾ", "ta": "எம்டிஎச் சனா மசாலா" },
+      "aliases": ["mdh", "chana masala", "chole masala", "masala"]
+    },
+    {
+      "id": "kirana-031",
+      "name": "Everest Garam Masala",
+      "size": "100 g",
+      "group": "Spices",
+      "price": 92,
+      "local": { "hi": "एवरेस्ट गरम मसाला", "kn": "ಎವರೆಸ್ಟ್ ಗರಂ ಮಸಾಲಾ", "ta": "எவரெஸ்ட் கரம் மசாலா" },
+      "aliases": ["everest", "garam masala", "masala"]
+    },
+    {
+      "id": "kirana-032",
+      "name": "Everest Turmeric Powder",
+      "size": "100 g",
+      "group": "Spices",
+      "price": 40,
+      "local": { "hi": "एवरेस्ट हल्दी पाउडर", "kn": "ಎವರೆಸ್ಟ್ ಅರಿಶಿನ ಪುಡಿ", "ta": "எவரெஸ்ட் மஞ்சள் தூள்" },
+      "aliases": ["everest", "turmeric", "haldi", "arishina", "manjal"]
+    },
+    {
+      "id": "kirana-033",
+      "name": "Everest Coriander Powder",
+      "size": "100 g",
+      "group": "Spices",
+      "price": 40,
+      "local": { "hi": "एवरेस्ट धनिया पाउडर", "kn": "ಎವರೆಸ್ಟ್ ಧನಿಯಾ ಪುಡಿ", "ta": "எவரெஸ்ட் மல்லித் தூள்" },
+      "aliases": ["everest", "dhania powder", "coriander powder", "kothambari pudi", "malli thool"]
+    },
+    {
+      "id": "kirana-034",
+      "name": "MTR Sambar Powder",
+      "size": "200 g",
+      "group": "Spices",
+      "price": 105,
+      "local": { "hi": "एमटीआर सांबार पाउडर", "kn": "ಎಂಟಿಆರ್ ಸಾಂಬಾರ್ ಪುಡಿ", "ta": "எம்டிஆர் சாம்பார் பொடி" },
+      "aliases": ["mtr", "sambar powder", "sambar pudi", "sambar podi"]
+    },
+    {
+      "id": "kirana-035",
+      "name": "MTR Rasam Powder",
+      "size": "100 g",
+      "group": "Spices",
+      "price": 60,
+      "local": { "hi": "एमटीआर रसम पाउडर", "kn": "ಎಂಟಿಆರ್ ಸಾರಿನ ಪುಡಿ", "ta": "எம்டிஆர் ரசப் பொடி" },
+      "aliases": ["mtr", "rasam powder", "saaru pudi", "rasam podi"]
+    },
+    {
+      "id": "kirana-036",
+      "name": "Aachi Chilli Powder",
+      "size": "200 g",
+      "group": "Spices",
+      "price": 80,
+      "local": { "hi": "आची मिर्च पाउडर", "kn": "ಆಚಿ ಖಾರದ ಪುಡಿ", "ta": "ஆச்சி மிளகாய் தூள்" },
+      "aliases": ["aachi", "chilli powder", "khara pudi", "milagai thool", "mirchi"]
+    },
+    {
+      "id": "kirana-037",
+      "name": "Jeera (Cumin Seeds)",
+      "size": "100 g",
+      "group": "Spices",
+      "price": 50,
+      "local": { "hi": "जीरा", "kn": "ಜೀರಿಗೆ", "ta": "சீரகம்" },
+      "aliases": ["jeera", "cumin", "jeerige", "seeragam"]
+    },
+    {
+      "id": "kirana-038",
+      "name": "Mustard Seeds",
+      "size": "100 g",
+      "group": "Spices",
+      "price": 20,
+      "local": { "hi": "राई", "kn": "ಸಾಸಿವೆ", "ta": "கடுகு" },
+      "aliases": ["mustard seeds", "rai", "sasive", "kadugu"]
+    },
+    {
+      "id": "kirana-039",
+      "name": "Black Pepper",
+      "size": "100 g",
+      "group": "Spices",
+      "price": 90,
+      "local": { "hi": "काली मिर्च", "kn": "ಕರಿಮೆಣಸು", "ta": "மிளகு" },
+      "aliases": ["pepper", "kali mirch", "menasu", "milagu", "black pepper"]
+    },
+    {
+      "id": "kirana-040",
+      "name": "Byadgi Dry Red Chilli",
+      "size": "250 g",
+      "group": "Spices",
+      "price": 90,
+      "local": { "hi": "सूखी लाल मिर्च", "kn": "ಬ್ಯಾಡಗಿ ಒಣ ಮೆಣಸಿನಕಾಯಿ", "ta": "காய்ந்த மிளகாய்" },
+      "aliases": ["red chilli", "sukhi mirch", "byadgi", "menasinakai", "milagai"]
+    },
+    {
+      "id": "kirana-041",
+      "name": "Tamarind",
+      "size": "500 g",
+      "group": "Spices",
+      "price": 90,
+      "local": { "hi": "इमली", "kn": "ಹುಣಸೆಹಣ್ಣು", "ta": "புளி" },
+      "aliases": ["tamarind", "imli", "hunase", "puli"]
+    },
+    {
+      "id": "kirana-042",
+      "name": "LG Asafoetida (Hing)",
+      "size": "50 g",
+      "group": "Spices",
+      "price": 85,
+      "local": { "hi": "एलजी हींग", "kn": "ಎಲ್‌ಜಿ ಇಂಗು", "ta": "எல்ஜி பெருங்காயம்" },
+      "aliases": ["hing", "lg", "asafoetida", "ingu", "perungayam"]
+    },
+    {
+      "id": "kirana-043",
+      "name": "Parle-G Biscuits",
+      "size": "250 g",
+      "group": "Snacks & Biscuits",
+      "price": 25,
+      "local": { "hi": "पारले-जी बिस्किट", "kn": "ಪಾರ್ಲೆ-ಜಿ ಬಿಸ್ಕತ್", "ta": "பார்லே-ஜி பிஸ்கட்" },
+      "aliases": ["parle g", "parle", "biscuit", "glucose biscuit"]
+    },
+    {
+      "id": "kirana-044",
+      "name": "Britannia Good Day Cashew",
+      "size": "200 g",
+      "group": "Snacks & Biscuits",
+      "price": 60,
+      "local": { "hi": "ब्रिटानिया गुड डे", "kn": "ಬ್ರಿಟಾನಿಯಾ ಗುಡ್ ಡೇ", "ta": "பிரிட்டானியா குட் டே" },
+      "aliases": ["good day", "britannia", "biscuit", "cashew cookies"]
+    },
+    {
+      "id": "kirana-045",
+      "name": "Britannia Marie Gold",
+      "size": "250 g",
+      "group": "Snacks & Biscuits",
+      "price": 40,
+      "local": { "hi": "ब्रिटानिया मारी गोल्ड", "kn": "ಬ್ರಿಟಾನಿಯಾ ಮಾರಿ ಗೋಲ್ಡ್", "ta": "பிரிட்டானியா மேரி கோல்ட்" },
+      "aliases": ["marie gold", "marie", "britannia", "biscuit"]
+    },
+    {
+      "id": "kirana-046",
+      "name": "Britannia Bourbon",
+      "size": "150 g",
+      "group": "Snacks & Biscuits",
+      "price": 35,
+      "local": { "hi": "ब्रिटानिया बॉर्बन", "kn": "ಬ್ರಿಟಾನಿಯಾ ಬೋರ್ಬನ್", "ta": "பிரிட்டானியா போர்பன்" },
+      "aliases": ["bourbon", "britannia", "chocolate biscuit"]
+    },
+    {
+      "id": "kirana-047",
+      "name": "Parle Monaco",
+      "size": "120 g",
+      "group": "Snacks & Biscuits",
+      "price": 25,
+      "local": { "hi": "पारले मोनाको", "kn": "ಪಾರ್ಲೆ ಮೊನಾಕೊ", "ta": "பார்லே மொனாக்கோ" },
+      "aliases": ["monaco", "parle", "salt biscuit"]
+    },
+    {
+      "id": "kirana-048",
+      "name": "Sunfeast Dark Fantasy Choco Fills",
+      "size": "75 g",
+      "group": "Snacks & Biscuits",
+      "price": 40,
+      "local": { "hi": "सनफीस्ट डार्क फैंटसी", "kn": "ಸನ್‌ಫೀಸ್ಟ್ ಡಾರ್ಕ್ ಫ್ಯಾಂಟಸಿ", "ta": "சன்ஃபீஸ்ட் டார்க் ஃபேண்டஸி" },
+      "aliases": ["dark fantasy", "sunfeast", "choco fills", "biscuit"]
+    },
+    {
+      "id": "kirana-049",
+      "name": "Oreo Chocolate Cream Biscuit",
+      "size": "120 g",
+      "group": "Snacks & Biscuits",
+      "price": 35,
+      "local": { "hi": "ओरियो बिस्किट", "kn": "ಓರಿಯೊ ಬಿಸ್ಕತ್", "ta": "ஓரியோ பிஸ்கட்" },
+      "aliases": ["oreo", "biscuit", "cream biscuit"]
+    },
+    {
+      "id": "kirana-050",
+      "name": "Lay's Classic Salted Chips",
+      "size": "52 g",
+      "group": "Snacks & Biscuits",
+      "price": 20,
+      "local": { "hi": "लेज़ चिप्स", "kn": "ಲೇಸ್ ಚಿಪ್ಸ್", "ta": "லேஸ் சிப்ஸ்" },
+      "aliases": ["lays", "chips", "salted chips", "wafers"]
+    },
+    {
+      "id": "kirana-051",
+      "name": "Kurkure Masala Munch",
+      "size": "75 g",
+      "group": "Snacks & Biscuits",
+      "price": 20,
+      "local": { "hi": "कुरकुरे मसाला मंच", "kn": "ಕುರ್‌ಕುರೆ ಮಸಾಲಾ ಮಂಚ್", "ta": "குர்குரே மசாலா மஞ்ச்" },
+      "aliases": ["kurkure", "masala munch", "namkeen"]
+    },
+    {
+      "id": "kirana-052",
+      "name": "Haldiram's Aloo Bhujia",
+      "size": "200 g",
+      "group": "Snacks & Biscuits",
+      "price": 60,
+      "local": { "hi": "हल्दीराम आलू भुजिया", "kn": "ಹಲ್ದೀರಾಮ್ ಆಲೂ ಭುಜಿಯಾ", "ta": "ஹல்திராம் ஆலு புஜியா" },
+      "aliases": ["haldiram", "aloo bhujia", "bhujia", "namkeen"]
+    },
+    {
+      "id": "kirana-053",
+      "name": "Haldiram's Moong Dal",
+      "size": "200 g",
+      "group": "Snacks & Biscuits",
+      "price": 60,
+      "local": { "hi": "हल्दीराम मूंग दाल", "kn": "ಹಲ್ದೀರಾಮ್ ಮೂಂಗ್ ದಾಲ್", "ta": "ஹல்திராம் மூங் தால்" },
+      "aliases": ["haldiram", "moong dal namkeen", "namkeen"]
+    },
+    {
+      "id": "kirana-054",
+      "name": "Cadbury Dairy Milk",
+      "size": "50 g",
+      "group": "Snacks & Biscuits",
+      "price": 50,
+      "local": { "hi": "कैडबरी डेयरी मिल्क", "kn": "ಕ್ಯಾಡ್‌ಬರಿ ಡೈರಿ ಮಿಲ್ಕ್", "ta": "கேட்பரி டெய்ரி மில்க்" },
+      "aliases": ["dairy milk", "cadbury", "chocolate"]
+    },
+    {
+      "id": "kirana-055",
+      "name": "Nestle KitKat",
+      "size": "38 g",
+      "group": "Snacks & Biscuits",
+      "price": 30,
+      "local": { "hi": "नेस्ले किटकैट", "kn": "ನೆಸ್ಲೆ ಕಿಟ್‌ಕ್ಯಾಟ್", "ta": "நெஸ்லே கிட்கேட்" },
+      "aliases": ["kitkat", "nestle", "chocolate"]
+    },
+    {
+      "id": "kirana-056",
+      "name": "Tata Tea Gold",
+      "size": "500 g",
+      "group": "Beverages",
+      "price": 320,
+      "local": { "hi": "टाटा टी गोल्ड", "kn": "ಟಾಟಾ ಟೀ ಗೋಲ್ಡ್", "ta": "டாடா டீ கோல்ட்" },
+      "aliases": ["tata tea", "tea", "chai", "tea powder", "chaha pudi"]
+    },
+    {
+      "id": "kirana-057",
+      "name": "Brooke Bond Red Label Tea",
+      "size": "500 g",
+      "group": "Beverages",
+      "price": 300,
+      "local": { "hi": "ब्रुक बॉन्ड रेड लेबल चाय", "kn": "ಬ್ರೂಕ್ ಬಾಂಡ್ ರೆಡ್ ಲೇಬಲ್ ಟೀ", "ta": "ப்ரூக் பாண்ட் ரெட் லேபிள் டீ" },
+      "aliases": ["red label", "brooke bond", "tea", "chai"]
+    },
+    {
+      "id": "kirana-058",
+      "name": "Brooke Bond 3 Roses Tea",
+      "size": "250 g",
+      "group": "Beverages",
+      "price": 150,
+      "local": { "hi": "ब्रुक बॉन्ड थ्री रोज़ेज़ चाय", "kn": "ಬ್ರೂಕ್ ಬಾಂಡ್ ತ್ರೀ ರೋಸಸ್ ಟೀ", "ta": "ப்ரூக் பாண்ட் த்ரீ ரோசஸ் டீ" },
+      "aliases": ["three roses", "3 roses", "tea", "tea powder"]
+    },
+    {
+      "id": "kirana-059",
+      "name": "Nescafe Classic Coffee",
+      "size": "50 g",
+      "group": "Beverages",
+      "price": 190,
+      "local": { "hi": "नेस्कैफे क्लासिक कॉफी", "kn": "ನೆಸ್ಕೆಫೆ ಕ್ಲಾಸಿಕ್ ಕಾಫಿ", "ta": "நெஸ்கஃபே கிளாசிக் காபி" },
+      "aliases": ["nescafe", "coffee", "instant coffee"]
+    },
+    {
+      "id": "kirana-060",
+      "name": "Bru Instant Coffee",
+      "size": "50 g",
+      "group": "Beverages",
+      "price": 150,
+      "local": { "hi": "ब्रू कॉफी", "kn": "ಬ್ರೂ ಕಾಫಿ", "ta": "ப்ரூ காபி" },
+      "aliases": ["bru", "coffee", "instant coffee"]
+    },
+    {
+      "id": "kirana-061",
+      "name": "Cothas Filter Coffee Powder",
+      "size": "500 g",
+      "group": "Beverages",
+      "price": 330,
+      "local": { "hi": "कोथास फिल्टर कॉफी", "kn": "ಕೋತಾಸ್ ಕಾಫಿ ಪುಡಿ", "ta": "கோதாஸ் காபி தூள்" },
+      "aliases": ["cothas", "filter coffee", "coffee powder", "kaapi pudi"]
+    },
+    {
+      "id": "kirana-062",
+      "name": "Coca-Cola",
+      "size": "750 ml",
+      "group": "Beverages",
+      "price": 40,
+      "local": { "hi": "कोका-कोला", "kn": "ಕೋಕಾ-ಕೋಲಾ", "ta": "கோகா-கோலா" },
+      "aliases": ["coke", "coca cola", "cold drink", "soft drink"]
+    },
+    {
+      "id": "kirana-063",
+      "name": "Thums Up",
+      "size": "750 ml",
+      "group": "Beverages",
+      "price": 40,
+      "local": { "hi": "थम्स अप", "kn": "ಥಮ್ಸ್ ಅಪ್", "ta": "தம்ஸ் அப்" },
+      "aliases": ["thums up", "thumbs up", "cold drink"]
+    },
+    {
+      "id": "kirana-064",
+      "name": "Sprite",
+      "size": "750 ml",
+      "group": "Beverages",
+      "price": 40,
+      "local": { "hi": "स्प्राइट", "kn": "ಸ್ಪ್ರೈಟ್", "ta": "ஸ்ப்ரைட்" },
+      "aliases": ["sprite", "cold drink", "soda"]
+    },
+    {
+      "id": "kirana-065",
+      "name": "Maaza Mango Drink",
+      "size": "600 ml",
+      "group": "Beverages",
+      "price": 40,
+      "local": { "hi": "माज़ा", "kn": "ಮಾಜಾ", "ta": "மாசா" },
+      "aliases": ["maaza", "mango drink", "juice"]
+    },
+    {
+      "id": "kirana-066",
+      "name": "Bisleri Water",
+      "size": "1 L",
+      "group": "Beverages",
+      "price": 20,
+      "local": { "hi": "बिसलेरी पानी", "kn": "ಬಿಸ್ಲೇರಿ ನೀರು", "ta": "பிஸ்லெரி தண்ணீர்" },
+      "aliases": ["bisleri", "water", "water bottle", "neeru", "thanni"]
+    },
+    {
+      "id": "kirana-067",
+      "name": "Cadbury Bournvita",
+      "size": "500 g",
+      "group": "Beverages",
+      "price": 250,
+      "local": { "hi": "कैडबरी बॉर्नविटा", "kn": "ಕ್ಯಾಡ್‌ಬರಿ ಬೋರ್ನ್‌ವಿಟಾ", "ta": "கேட்பரி போர்ன்விட்டா" },
+      "aliases": ["bournvita", "cadbury", "health drink", "malt"]
+    },
+    {
+      "id": "kirana-068",
+      "name": "Horlicks",
+      "size": "500 g",
+      "group": "Beverages",
+      "price": 270,
+      "local": { "hi": "हॉर्लिक्स", "kn": "ಹಾರ್ಲಿಕ್ಸ್", "ta": "ஹார்லிக்ஸ்" },
+      "aliases": ["horlicks", "health drink", "malt"]
+    },
+    {
+      "id": "kirana-069",
+      "name": "Nandini Toned Milk",
+      "size": "500 ml",
+      "group": "Dairy",
+      "price": 26,
+      "local": { "hi": "नंदिनी टोंड दूध", "kn": "ನಂದಿನಿ ಟೋನ್ಡ್ ಹಾಲು", "ta": "நந்தினி டோன்ட் பால்" },
+      "aliases": ["nandini milk", "milk", "haalu", "doodh", "paal", "blue packet"]
+    },
+    {
+      "id": "kirana-070",
+      "name": "Nandini Shubham Milk",
+      "size": "500 ml",
+      "group": "Dairy",
+      "price": 30,
+      "local": { "hi": "नंदिनी शुभम दूध", "kn": "ನಂದಿನಿ ಶುಭಂ ಹಾಲು", "ta": "நந்தினி சுபம் பால்" },
+      "aliases": ["shubham", "nandini", "milk", "haalu", "orange packet"]
+    },
+    {
+      "id": "kirana-071",
+      "name": "Amul Taaza Toned Milk",
+      "size": "500 ml",
+      "group": "Dairy",
+      "price": 29,
+      "local": { "hi": "अमूल ताज़ा दूध", "kn": "ಅಮುಲ್ ತಾಜಾ ಹಾಲು", "ta": "அமுல் தாசா பால்" },
+      "aliases": ["amul", "taaza", "milk", "doodh"]
+    },
+    {
+      "id": "kirana-072",
+      "name": "Nandini Curd",
+      "size": "500 g",
+      "group": "Dairy",
+      "price": 30,
+      "local": { "hi": "नंदिनी दही", "kn": "ನಂದಿನಿ ಮೊಸರು", "ta": "நந்தினி தயிர்" },
+      "aliases": ["curd", "dahi", "mosaru", "thayir", "nandini curd"]
+    },
+    {
+      "id": "kirana-073",
+      "name": "Nandini Buttermilk",
+      "size": "200 ml",
+      "group": "Dairy",
+      "price": 10,
+      "local": { "hi": "नंदिनी छाछ", "kn": "ನಂದಿನಿ ಮಜ್ಜಿಗೆ", "ta": "நந்தினி மோர்" },
+      "aliases": ["buttermilk", "majjige", "chaas", "mor", "nandini"]
+    },
+    {
+      "id": "kirana-074",
+      "name": "Nandini Paneer",
+      "size": "200 g",
+      "group": "Dairy",
+      "price": 90,
+      "local": { "hi": "नंदिनी पनीर", "kn": "ನಂದಿನಿ ಪನೀರ್", "ta": "நந்தினி பனீர்" },
+      "aliases": ["paneer", "nandini paneer", "cottage cheese"]
+    },
+    {
+      "id": "kirana-075",
+      "name": "Amul Butter",
+      "size": "100 g",
+      "group": "Dairy",
+      "price": 62,
+      "local": { "hi": "अमूल बटर", "kn": "ಅಮುಲ್ ಬೆಣ್ಣೆ", "ta": "அமுல் வெண்ணெய்" },
+      "aliases": ["amul butter", "butter", "makhan", "benne", "vennai"]
+    },
+    {
+      "id": "kirana-076",
+      "name": "Amul Butter",
+      "size": "500 g",
+      "group": "Dairy",
+      "price": 285,
+      "local": { "hi": "अमूल बटर", "kn": "ಅಮುಲ್ ಬೆಣ್ಣೆ", "ta": "அமுல் வெண்ணெய்" },
+      "aliases": ["amul butter", "butter", "makhan", "benne", "big butter"]
+    },
+    {
+      "id": "kirana-077",
+      "name": "Amul Cheese Slices",
+      "size": "200 g",
+      "group": "Dairy",
+      "price": 155,
+      "local": { "hi": "अमूल चीज़ स्लाइस", "kn": "ಅಮುಲ್ ಚೀಸ್ ಸ್ಲೈಸ್", "ta": "அமுல் சீஸ் ஸ்லைஸ்" },
+      "aliases": ["amul cheese", "cheese slice", "cheese"]
+    },
+    {
+      "id": "kirana-078",
+      "name": "Eggs",
+      "size": "6 pcs",
+      "group": "Dairy",
+      "price": 45,
+      "local": { "hi": "अंडे", "kn": "ಮೊಟ್ಟೆ", "ta": "முட்டை" },
+      "aliases": ["eggs", "anda", "motte", "muttai"]
+    },
+    {
+      "id": "kirana-079",
+      "name": "Colgate Strong Teeth Toothpaste",
+      "size": "200 g",
+      "group": "Personal Care",
+      "price": 120,
+      "local": { "hi": "कोलगेट टूथपेस्ट", "kn": "ಕೋಲ್ಗೇಟ್ ಟೂತ್‌ಪೇಸ್ಟ್", "ta": "கோல்கேட் பற்பசை" },
+      "aliases": ["colgate", "toothpaste", "paste"]
+    },
+    {
+      "id": "kirana-080",
+      "name": "Closeup Red Hot Gel Toothpaste",
+      "size": "150 g",
+      "group": "Personal Care",
+      "price": 110,
+      "local": { "hi": "क्लोज़अप टूथपेस्ट", "kn": "ಕ್ಲೋಸಪ್ ಟೂತ್‌ಪೇಸ್ಟ್", "ta": "க்ளோஸ்அப் பற்பசை" },
+      "aliases": ["closeup", "toothpaste", "gel", "paste"]
+    },
+    {
+      "id": "kirana-081",
+      "name": "Colgate ZigZag Toothbrush",
+      "size": "1 pc",
+      "group": "Personal Care",
+      "price": 40,
+      "local": { "hi": "कोलगेट टूथब्रश", "kn": "ಕೋಲ್ಗೇಟ್ ಟೂತ್‌ಬ್ರಷ್", "ta": "கோல்கேட் பல் துலக்கி" },
+      "aliases": ["toothbrush", "brush", "colgate"]
+    },
+    {
+      "id": "kirana-082",
+      "name": "Lifebuoy Total Soap",
+      "size": "100 g",
+      "group": "Personal Care",
+      "price": 35,
+      "local": { "hi": "लाइफबॉय साबुन", "kn": "ಲೈಫ್‌ಬಾಯ್ ಸೋಪು", "ta": "லைஃப்பாய் சோப்பு" },
+      "aliases": ["lifebuoy", "soap", "sabun", "sopu"]
+    },
+    {
+      "id": "kirana-083",
+      "name": "Lux Soap",
+      "size": "100 g",
+      "group": "Personal Care",
+      "price": 40,
+      "local": { "hi": "लक्स साबुन", "kn": "ಲಕ್ಸ್ ಸೋಪು", "ta": "லக்ஸ் சோப்பு" },
+      "aliases": ["lux", "soap", "bathing soap"]
+    },
+    {
+      "id": "kirana-084",
+      "name": "Dettol Original Soap",
+      "size": "125 g",
+      "group": "Personal Care",
+      "price": 60,
+      "local": { "hi": "डेटॉल साबुन", "kn": "ಡೆಟಾಲ್ ಸೋಪು", "ta": "டெட்டால் சோப்பு" },
+      "aliases": ["dettol", "soap", "dettol soap"]
+    },
+    {
+      "id": "kirana-085",
+      "name": "Mysore Sandal Soap",
+      "size": "125 g",
+      "group": "Personal Care",
+      "price": 85,
+      "local": { "hi": "मैसूर सैंडल साबुन", "kn": "ಮೈಸೂರು ಸ್ಯಾಂಡಲ್ ಸೋಪು", "ta": "மைசூர் சாண்டல் சோப்பு" },
+      "aliases": ["mysore sandal", "sandal soap", "soap", "chandana"]
+    },
+    {
+      "id": "kirana-086",
+      "name": "Medimix Ayurvedic Soap",
+      "size": "125 g",
+      "group": "Personal Care",
+      "price": 52,
+      "local": { "hi": "मेडिमिक्स साबुन", "kn": "ಮೆಡಿಮಿಕ್ಸ್ ಸೋಪು", "ta": "மெடிமிக்ஸ் சோப்பு" },
+      "aliases": ["medimix", "soap", "ayurvedic soap"]
+    },
+    {
+      "id": "kirana-087",
+      "name": "Clinic Plus Shampoo",
+      "size": "175 ml",
+      "group": "Personal Care",
+      "price": 125,
+      "local": { "hi": "क्लिनिक प्लस शैम्पू", "kn": "ಕ್ಲಿನಿಕ್ ಪ್ಲಸ್ ಶಾಂಪೂ", "ta": "கிளினிக் பிளஸ் ஷாம்பு" },
+      "aliases": ["clinic plus", "shampoo"]
+    },
+    {
+      "id": "kirana-088",
+      "name": "Head & Shoulders Shampoo",
+      "size": "180 ml",
+      "group": "Personal Care",
+      "price": 200,
+      "local": { "hi": "हेड एंड शोल्डर्स शैम्पू", "kn": "ಹೆಡ್ ಅಂಡ್ ಶೋಲ್ಡರ್ಸ್ ಶಾಂಪೂ", "ta": "ஹெட் அண்ட் ஷோல்டர்ஸ் ஷாம்பு" },
+      "aliases": ["head and shoulders", "shampoo", "anti dandruff"]
+    },
+    {
+      "id": "kirana-089",
+      "name": "Parachute Coconut Oil",
+      "size": "200 ml",
+      "group": "Personal Care",
+      "price": 110,
+      "local": { "hi": "पैराशूट नारियल तेल", "kn": "ಪ್ಯಾರಾಶೂಟ್ ತೆಂಗಿನ ಎಣ್ಣೆ", "ta": "பாராசூட் தேங்காய் எண்ணெய்" },
+      "aliases": ["parachute", "coconut oil", "hair oil", "kobbari enne", "thengai ennai"]
+    },
+    {
+      "id": "kirana-090",
+      "name": "Gillette Guard Razor",
+      "size": "1 pc",
+      "group": "Personal Care",
+      "price": 30,
+      "local": { "hi": "जिलेट गार्ड रेज़र", "kn": "ಜಿಲೆಟ್ ಗಾರ್ಡ್ ರೇಜರ್", "ta": "ஜில்லெட் கார்டு ரேசர்" },
+      "aliases": ["gillette", "razor", "shaving", "blade"]
+    },
+    {
+      "id": "kirana-091",
+      "name": "Whisper Choice Ultra Pads",
+      "size": "7 pads",
+      "group": "Personal Care",
+      "price": 45,
+      "local": { "hi": "व्हिस्पर पैड", "kn": "ವಿಸ್ಪರ್ ಪ್ಯಾಡ್", "ta": "விஸ்பர் பேட்" },
+      "aliases": ["whisper", "sanitary pad", "pads", "napkin"]
+    },
+    {
+      "id": "kirana-092",
+      "name": "Pond's Dreamflower Talc",
+      "size": "100 g",
+      "group": "Personal Care",
+      "price": 100,
+      "local": { "hi": "पॉन्ड्स पाउडर", "kn": "ಪಾಂಡ್ಸ್ ಪೌಡರ್", "ta": "பாண்ட்ஸ் பவுடர்" },
+      "aliases": ["ponds", "powder", "talc", "talcum powder"]
+    },
+    {
+      "id": "kirana-093",
+      "name": "Surf Excel Easy Wash",
+      "size": "1 kg",
+      "group": "Household",
+      "price": 140,
+      "local": { "hi": "सर्फ एक्सेल", "kn": "ಸರ್ಫ್ ಎಕ್ಸೆಲ್", "ta": "சர்ஃப் எக்செல்" },
+      "aliases": ["surf excel", "surf", "detergent", "washing powder"]
+    },
+    {
+      "id": "kirana-094",
+      "name": "Tide Plus Detergent Powder",
+      "size": "1 kg",
+      "group": "Household",
+      "price": 130,
+      "local": { "hi": "टाइड डिटर्जेंट", "kn": "ಟೈಡ್ ಡಿಟರ್ಜೆಂಟ್", "ta": "டைடு சலவைத் தூள்" },
+      "aliases": ["tide", "detergent", "washing powder"]
+    },
+    {
+      "id": "kirana-095",
+      "name": "Rin Detergent Bar",
+      "size": "250 g",
+      "group": "Household",
+      "price": 25,
+      "local": { "hi": "रिन साबुन", "kn": "ರಿನ್ ಬಟ್ಟೆ ಸೋಪು", "ta": "ரின் சலவை சோப்பு" },
+      "aliases": ["rin", "washing soap", "detergent bar", "batte sopu"]
+    },
+    {
+      "id": "kirana-096",
+      "name": "Vim Dishwash Bar",
+      "size": "300 g",
+      "group": "Household",
+      "price": 30,
+      "local": { "hi": "विम बार", "kn": "ವಿಮ್ ಬಾರ್", "ta": "விம் பார்" },
+      "aliases": ["vim", "vim bar", "dishwash", "bartan sabun", "pathre sopu"]
+    },
+    {
+      "id": "kirana-097",
+      "name": "Vim Dishwash Liquid",
+      "size": "500 ml",
+      "group": "Household",
+      "price": 110,
+      "local": { "hi": "विम लिक्विड", "kn": "ವಿಮ್ ಲಿಕ್ವಿಡ್", "ta": "விம் லிக்விட்" },
+      "aliases": ["vim liquid", "dishwash liquid", "vim gel", "vim"]
+    },
+    {
+      "id": "kirana-098",
+      "name": "Harpic Toilet Cleaner",
+      "size": "500 ml",
+      "group": "Household",
+      "price": 110,
+      "local": { "hi": "हार्पिक", "kn": "ಹಾರ್ಪಿಕ್", "ta": "ஹார்பிக்" },
+      "aliases": ["harpic", "toilet cleaner"]
+    },
+    {
+      "id": "kirana-099",
+      "name": "Lizol Floor Cleaner",
+      "size": "500 ml",
+      "group": "Household",
+      "price": 115,
+      "local": { "hi": "लाइज़ोल", "kn": "ಲೈಜಾಲ್", "ta": "லைசால்" },
+      "aliases": ["lizol", "floor cleaner", "phenyl"]
+    },
+    {
+      "id": "kirana-100",
+      "name": "Dettol Antiseptic Liquid",
+      "size": "250 ml",
+      "group": "Household",
+      "price": 145,
+      "local": { "hi": "डेटॉल लिक्विड", "kn": "ಡೆಟಾಲ್ ಲಿಕ್ವಿಡ್", "ta": "டெட்டால் லிக்விட்" },
+      "aliases": ["dettol", "antiseptic", "dettol liquid"]
+    },
+    {
+      "id": "kirana-101",
+      "name": "Good Knight Gold Flash Refill",
+      "size": "45 ml",
+      "group": "Household",
+      "price": 85,
+      "local": { "hi": "गुड नाइट रिफिल", "kn": "ಗುಡ್ ನೈಟ್ ರೀಫಿಲ್", "ta": "குட் நைட் ரீஃபில்" },
+      "aliases": ["good knight", "mosquito refill", "refill", "machar"]
+    },
+    {
+      "id": "kirana-102",
+      "name": "Cycle Agarbathi",
+      "size": "1 pack",
+      "group": "Household",
+      "price": 50,
+      "local": { "hi": "साइकिल अगरबत्ती", "kn": "ಸೈಕಲ್ ಅಗರಬತ್ತಿ", "ta": "சைக்கிள் ஊதுபத்தி" },
+      "aliases": ["cycle", "agarbatti", "agarbathi", "incense", "oodhubathi"]
+    },
+    {
+      "id": "kirana-103",
+      "name": "Ship Matchbox",
+      "size": "10 pcs",
+      "group": "Household",
+      "price": 20,
+      "local": { "hi": "माचिस", "kn": "ಬೆಂಕಿಪೊಟ್ಟಣ", "ta": "தீப்பெட்டி" },
+      "aliases": ["matchbox", "machis", "benki potna", "theepetti"]
+    },
+    {
+      "id": "kirana-104",
+      "name": "Scotch-Brite Scrub Pad",
+      "size": "1 pc",
+      "group": "Household",
+      "price": 25,
+      "local": { "hi": "स्कॉच-ब्राइट", "kn": "ಸ್ಕಾಚ್-ಬ್ರೈಟ್", "ta": "ஸ்காட்ச்-பிரைட்" },
+      "aliases": ["scotch brite", "scrubber", "scrub pad"]
+    },
+    {
+      "id": "kirana-105",
+      "name": "Garbage Bags (Medium)",
+      "size": "30 pcs",
+      "group": "Household",
+      "price": 90,
+      "local": { "hi": "कचरा थैली", "kn": "ಕಸದ ಚೀಲ", "ta": "குப்பைப் பை" },
+      "aliases": ["garbage bag", "dustbin cover", "kasa bag", "kachra bag"]
+    },
+    {
+      "id": "kirana-106",
+      "name": "Maggi 2-Minute Noodles",
+      "size": "70 g",
+      "group": "Instant Food",
+      "price": 15,
+      "local": { "hi": "मैगी नूडल्स", "kn": "ಮ್ಯಾಗಿ ನೂಡಲ್ಸ್", "ta": "மேகி நூடுல்ஸ்" },
+      "aliases": ["maggi", "noodles", "maggi noodles"]
+    },
+    {
+      "id": "kirana-107",
+      "name": "Maggi 2-Minute Noodles (4 pack)",
+      "size": "280 g",
+      "group": "Instant Food",
+      "price": 60,
+      "local": { "hi": "मैगी नूडल्स", "kn": "ಮ್ಯಾಗಿ ನೂಡಲ್ಸ್", "ta": "மேகி நூடுல்ஸ்" },
+      "aliases": ["maggi", "noodles", "maggi pack", "family pack"]
+    },
+    {
+      "id": "kirana-108",
+      "name": "Sunfeast Yippee Magic Masala (4 pack)",
+      "size": "240 g",
+      "group": "Instant Food",
+      "price": 56,
+      "local": { "hi": "सनफीस्ट यिप्पी नूडल्स", "kn": "ಸನ್‌ಫೀಸ್ಟ್ ಯಿಪ್ಪೀ ನೂಡಲ್ಸ್", "ta": "சன்ஃபீஸ்ட் யிப்பீ நூடுல்ஸ்" },
+      "aliases": ["yippee", "sunfeast", "noodles"]
+    },
+    {
+      "id": "kirana-109",
+      "name": "MTR Ready to Eat Bisibele Bath",
+      "size": "300 g",
+      "group": "Instant Food",
+      "price": 120,
+      "local": { "hi": "एमटीआर बिसिबेले भात", "kn": "ಎಂಟಿಆರ್ ಬಿಸಿಬೇಳೆ ಬಾತ್", "ta": "எம்டிஆர் பிசிபேளே பாத்" },
+      "aliases": ["mtr", "bisibele bath", "ready to eat", "instant"]
+    },
+    {
+      "id": "kirana-110",
+      "name": "MTR Gulab Jamun Mix",
+      "size": "175 g",
+      "group": "Instant Food",
+      "price": 110,
+      "local": { "hi": "एमटीआर गुलाब जामुन मिक्स", "kn": "ಎಂಟಿಆರ್ ಜಾಮೂನು ಮಿಕ್ಸ್", "ta": "எம்டிஆர் குலாப் ஜாமுன் மிக்ஸ்" },
+      "aliases": ["gulab jamun mix", "jamun", "mtr", "instant mix"]
+    },
+    {
+      "id": "kirana-111",
+      "name": "Bambino Roasted Vermicelli",
+      "size": "400 g",
+      "group": "Instant Food",
+      "price": 55,
+      "local": { "hi": "बैम्बिनो सेवई", "kn": "ಬ್ಯಾಂಬಿನೋ ಶಾವಿಗೆ", "ta": "பாம்பினோ சேமியா" },
+      "aliases": ["bambino", "vermicelli", "semiya", "shavige", "sevai"]
+    },
+    {
+      "id": "kirana-112",
+      "name": "Knorr Classic Tomato Soup",
+      "size": "53 g",
+      "group": "Instant Food",
+      "price": 65,
+      "local": { "hi": "नॉर टमाटर सूप", "kn": "ನಾರ್ ಟೊಮ್ಯಾಟೊ ಸೂಪ್", "ta": "நார் தக்காளி சூப்" },
+      "aliases": ["knorr", "soup", "tomato soup"]
+    },
+    {
+      "id": "kirana-113",
+      "name": "Kissan Fresh Tomato Ketchup",
+      "size": "950 g",
+      "group": "Instant Food",
+      "price": 155,
+      "local": { "hi": "किसान टमाटर कैचप", "kn": "ಕಿಸಾನ್ ಟೊಮ್ಯಾಟೊ ಕೆಚಪ್", "ta": "கிசான் தக்காளி கெட்ச்அப்" },
+      "aliases": ["kissan", "ketchup", "tomato sauce", "sauce"]
+    },
+    {
+      "id": "kirana-114",
+      "name": "Ching's Schezwan Chutney",
+      "size": "250 g",
+      "group": "Instant Food",
+      "price": 100,
+      "local": { "hi": "चिंग्स शेज़वान चटनी", "kn": "ಚಿಂಗ್ಸ್ ಶೆಜ್ವಾನ್ ಚಟ್ನಿ", "ta": "சிங்ஸ் ஷெஸ்வான் சட்னி" },
+      "aliases": ["chings", "schezwan", "schezwan chutney", "sauce"]
+    },
+    {
+      "id": "kirana-115",
+      "name": "Priya Mango Pickle",
+      "size": "300 g",
+      "group": "Instant Food",
+      "price": 95,
+      "local": { "hi": "प्रिया आम का अचार", "kn": "ಪ್ರಿಯಾ ಮಾವಿನಕಾಯಿ ಉಪ್ಪಿನಕಾಯಿ", "ta": "பிரியா மாங்காய் ஊறுகாய்" },
+      "aliases": ["priya", "pickle", "mango pickle", "achar", "uppinakayi", "oorugai"]
+    },
+    {
+      "id": "kirana-116",
+      "name": "Kellogg's Corn Flakes",
+      "size": "475 g",
+      "group": "Breakfast",
+      "price": 210,
+      "local": { "hi": "केलॉग्स कॉर्न फ्लेक्स", "kn": "ಕೆಲಾಗ್ಸ್ ಕಾರ್ನ್ ಫ್ಲೇಕ್ಸ್", "ta": "கெல்லாக்ஸ் கார்ன் ஃப்ளேக்ஸ்" },
+      "aliases": ["kelloggs", "corn flakes", "cornflakes", "cereal"]
+    },
+    {
+      "id": "kirana-117",
+      "name": "Quaker Oats",
+      "size": "1 kg",
+      "group": "Breakfast",
+      "price": 210,
+      "local": { "hi": "क्वेकर ओट्स", "kn": "ಕ್ವೇಕರ್ ಓಟ್ಸ್", "ta": "குவேக்கர் ஓட்ஸ்" },
+      "aliases": ["quaker", "oats", "oatmeal"]
+    },
+    {
+      "id": "kirana-118",
+      "name": "Saffola Masala Oats",
+      "size": "39 g",
+      "group": "Breakfast",
+      "price": 15,
+      "local": { "hi": "सफोला मसाला ओट्स", "kn": "ಸಫೋಲಾ ಮಸಾಲಾ ಓಟ್ಸ್", "ta": "சஃபோலா மசாலா ஓட்ஸ்" },
+      "aliases": ["saffola", "masala oats", "oats"]
+    },
+    {
+      "id": "kirana-119",
+      "name": "MTR Rava Idli Mix",
+      "size": "500 g",
+      "group": "Breakfast",
+      "price": 145,
+      "local": { "hi": "एमटीआर रवा इडली मिक्स", "kn": "ಎಂಟಿಆರ್ ರವೆ ಇಡ್ಲಿ ಮಿಕ್ಸ್", "ta": "எம்டிஆர் ரவா இட்லி மிக்ஸ்" },
+      "aliases": ["mtr", "rava idli", "idli mix", "instant mix"]
+    },
+    {
+      "id": "kirana-120",
+      "name": "MTR Dosa Mix",
+      "size": "500 g",
+      "group": "Breakfast",
+      "price": 140,
+      "local": { "hi": "एमटीआर डोसा मिक्स", "kn": "ಎಂಟಿಆರ್ ದೋಸೆ ಮಿಕ್ಸ್", "ta": "எம்டிஆர் தோசை மிக்ஸ்" },
+      "aliases": ["mtr", "dosa mix", "dose", "dosai"]
+    },
+    {
+      "id": "kirana-121",
+      "name": "iD Idli & Dosa Batter",
+      "size": "1 kg",
+      "group": "Breakfast",
+      "price": 90,
+      "local": { "hi": "आईडी इडली डोसा बैटर", "kn": "ಐಡಿ ಇಡ್ಲಿ ದೋಸೆ ಹಿಟ್ಟು", "ta": "ஐடி இட்லி தோசை மாவு" },
+      "aliases": ["id batter", "idli batter", "dosa batter", "dose hittu", "maavu"]
+    },
+    {
+      "id": "kirana-122",
+      "name": "Kissan Mixed Fruit Jam",
+      "size": "500 g",
+      "group": "Breakfast",
+      "price": 180,
+      "local": { "hi": "किसान मिक्स्ड फ्रूट जैम", "kn": "ಕಿಸಾನ್ ಮಿಕ್ಸ್ಡ್ ಫ್ರೂಟ್ ಜಾಮ್", "ta": "கிசான் மிக்ஸ்டு ஃப்ரூட் ஜாம்" },
+      "aliases": ["kissan", "jam", "fruit jam"]
+    },
+    {
+      "id": "kirana-123",
+      "name": "Modern White Bread",
+      "size": "400 g",
+      "group": "Breakfast",
+      "price": 45,
+      "local": { "hi": "मॉडर्न ब्रेड", "kn": "ಮಾಡರ್ನ್ ಬ್ರೆಡ್", "ta": "மாடர்ன் ரொட்டி" },
+      "aliases": ["bread", "modern bread", "white bread", "double roti"]
+    },
+    {
+      "id": "kirana-124",
+      "name": "Dabur Honey",
+      "size": "500 g",
+      "group": "Breakfast",
+      "price": 225,
+      "local": { "hi": "डाबर शहद", "kn": "ಡಾಬರ್ ಜೇನುತುಪ್ಪ", "ta": "டாபர் தேன்" },
+      "aliases": ["dabur honey", "honey", "shahad", "jenu", "then"]
+    }
+  ]
+}

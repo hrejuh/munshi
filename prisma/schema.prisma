@@ -1,0 +1,215 @@
+// Munshi data model. One multi-tenant schema serves every shop; the AI never
+// writes per-shop code, it only fills these rows (as drafts the owner approves).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ShopStatus {
+  DRAFT
+  LIVE
+}
+
+enum DeliveryMode {
+  DELIVERY
+  PICKUP
+  BOTH
+}
+
+enum ProductSource {
+  TEMPLATE
+  PHOTO
+  VOICE
+  TEXT
+}
+
+enum ProductStatus {
+  DRAFT
+  APPROVED
+  REJECTED
+}
+
+enum OrderChannel {
+  WEB
+  VOICE_WEB
+  PHONE
+  MESSAGE
+}
+
+enum Fulfilment {
+  DELIVERY
+  PICKUP
+}
+
+enum OwnerDecision {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum OrderStatus {
+  PLACED
+  ACCEPTED
+  READY
+  OUT_FOR_DELIVERY
+  COMPLETED
+  REJECTED
+}
+
+enum AgentName {
+  ONBOARDING
+  CATALOG
+  ORDER
+  VOICE
+  SYSTEM
+}
+
+model Shop {
+  id               String       @id @default(cuid())
+  slug             String       @unique
+  shopCode         String       @unique
+  ownerName        String
+  phone            String       @unique
+  language         String       @default("en")
+  name             String?
+  category         String?
+  address          String?
+  area             String?
+  timings          String?
+  tagline          String?
+  description      String?
+  deliveryMode     DeliveryMode @default(BOTH)
+  deliveryFee      Int          @default(0)
+  minOrder         Int          @default(0)
+  deliveryNote     String?
+  munshiNumber     String?
+  status           ShopStatus   @default(DRAFT)
+  approvedAt       DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  products      Product[]
+  buyers        Buyer[]
+  orders        Order[]
+  agentLogs    AgentLog[]
+  conversations Conversation[]
+  images        Image[]
+  notifications Notification[]
+}
+
+model Product {
+  id         String        @id @default(cuid())
+  shopId     String
+  shop       Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  name       String
+  nameLocal  String?
+  size       String?
+  price      Int
+  category   String?
+  aliases    String[]      @default([])
+  imageId    String?
+  templateId String?
+  source     ProductSource
+  status     ProductStatus @default(DRAFT)
+  inStock    Boolean       @default(true)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@index([shopId, status])
+}
+
+model Buyer {
+  id         String   @id @default(cuid())
+  shopId     String
+  shop       Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  name       String
+  phone      String
+  address    String?
+  orderCount Int      @default(0)
+  createdAt  DateTime @default(now())
+  orders     Order[]
+
+  @@unique([shopId, phone])
+}
+
+model Order {
+  id            String        @id @default(cuid())
+  code          String        @unique
+  shopId        String
+  shop          Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  buyerId       String
+  buyer         Buyer         @relation(fields: [buyerId], references: [id])
+  // Snapshot of [{productId, name, size, price, qty}] at order time.
+  items         Json
+  subtotal      Int
+  deliveryFee   Int           @default(0)
+  total         Int
+  channel       OrderChannel
+  fulfilment    Fulfilment
+  address       String?
+  note          String?
+  // Cash on delivery (or at pickup): the owner collects cash when the order is completed.
+  ownerDecision OwnerDecision @default(PENDING)
+  status        OrderStatus   @default(PLACED)
+  decidedAt     DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([shopId, createdAt])
+}
+
+model AgentLog {
+  id            String    @id @default(cuid())
+  shopId        String?
+  shop          Shop?     @relation(fields: [shopId], references: [id], onDelete: SetNull)
+  agent         AgentName
+  action        String
+  inputSummary  String?
+  outputSummary String?
+  runId         String?
+  provider      String    @default("munshi")
+  confidence    Float?
+  needsApproval Boolean   @default(false)
+  approvedBy    String?
+  approvedAt    DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([createdAt])
+}
+
+model Conversation {
+  id               String   @id @default(cuid())
+  shopId           String?
+  shop             Shop?    @relation(fields: [shopId], references: [id], onDelete: SetNull)
+  elConversationId String?  @unique
+  kind             String
+  channel          String
+  caller           String?
+  transcript       Json?
+  createdAt        DateTime @default(now())
+}
+
+model Image {
+  id        String   @id @default(cuid())
+  shopId    String
+  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  mime      String
+  bytes     Bytes
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  shopId    String
+  shop      Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  orderId   String?
+  type      String
+  message   String
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+}

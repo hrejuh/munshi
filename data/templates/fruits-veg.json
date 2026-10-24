@@ -1,0 +1,366 @@
+{
+  "category": "fruits-veg",
+  "label": { "en": "Fruits & Vegetables", "hi": "फल और सब्ज़ी", "kn": "ಹಣ್ಣು ಮತ್ತು ತರಕಾರಿ", "ta": "பழங்கள் & காய்கறிகள்" },
+  "items": [
+    {
+      "id": "fruits-veg-001",
+      "name": "Onion",
+      "size": "1 kg",
+      "group": "Essentials",
+      "price": 40,
+      "local": { "hi": "प्याज़", "kn": "ಈರುಳ್ಳಿ", "ta": "வெங்காயம்" },
+      "aliases": ["onion", "pyaz", "eerulli", "vengayam", "kanda"]
+    },
+    {
+      "id": "fruits-veg-002",
+      "name": "Tomato",
+      "size": "1 kg",
+      "group": "Essentials",
+      "price": 40,
+      "local": { "hi": "टमाटर", "kn": "ಟೊಮ್ಯಾಟೊ", "ta": "தக்காளி" },
+      "aliases": ["tomato", "tamatar", "thakkali"]
+    },
+    {
+      "id": "fruits-veg-003",
+      "name": "Potato",
+      "size": "1 kg",
+      "group": "Essentials",
+      "price": 40,
+      "local": { "hi": "आलू", "kn": "ಆಲೂಗಡ್ಡೆ", "ta": "உருளைக்கிழங்கு" },
+      "aliases": ["potato", "aloo", "alugadde", "urulaikizhangu", "batata"]
+    },
+    {
+      "id": "fruits-veg-004",
+      "name": "Ginger",
+      "size": "250 g",
+      "group": "Essentials",
+      "price": 40,
+      "local": { "hi": "अदरक", "kn": "ಶುಂಠಿ", "ta": "இஞ்சி" },
+      "aliases": ["ginger", "adrak", "shunti", "inji"]
+    },
+    {
+      "id": "fruits-veg-005",
+      "name": "Garlic",
+      "size": "250 g",
+      "group": "Essentials",
+      "price": 60,
+      "local": { "hi": "लहसुन", "kn": "ಬೆಳ್ಳುಳ್ಳಿ", "ta": "பூண்டு" },
+      "aliases": ["garlic", "lahsun", "bellulli", "poondu"]
+    },
+    {
+      "id": "fruits-veg-006",
+      "name": "Green Chilli",
+      "size": "250 g",
+      "group": "Essentials",
+      "price": 25,
+      "local": { "hi": "हरी मिर्च", "kn": "ಹಸಿ ಮೆಣಸಿನಕಾಯಿ", "ta": "பச்சை மிளகாய்" },
+      "aliases": ["green chilli", "hari mirch", "hasi menasinakai", "pachai milagai", "mirchi"]
+    },
+    {
+      "id": "fruits-veg-007",
+      "name": "Lemon",
+      "size": "4 pcs",
+      "group": "Essentials",
+      "price": 20,
+      "local": { "hi": "नींबू", "kn": "ನಿಂಬೆಹಣ್ಣು", "ta": "எலுமிச்சை" },
+      "aliases": ["lemon", "nimbu", "nimbe hannu", "elumichai"]
+    },
+    {
+      "id": "fruits-veg-008",
+      "name": "Coconut",
+      "size": "1 pc",
+      "group": "Essentials",
+      "price": 40,
+      "local": { "hi": "नारियल", "kn": "ತೆಂಗಿನಕಾಯಿ", "ta": "தேங்காய்" },
+      "aliases": ["coconut", "nariyal", "tengina kai", "thengai", "kayi"]
+    },
+    {
+      "id": "fruits-veg-009",
+      "name": "Carrot",
+      "size": "500 g",
+      "group": "Vegetables",
+      "price": 35,
+      "local": { "hi": "गाजर", "kn": "ಗಜ್ಜರಿ", "ta": "கேரட்" },
+      "aliases": ["carrot", "gajar", "gajjari"]
+    },
+    {
+      "id": "fruits-veg-010",
+      "name": "Beetroot",
+      "size": "500 g",
+      "group": "Vegetables",
+      "price": 30,
+      "local": { "hi": "चुकंदर", "kn": "ಬೀಟ್‌ರೂಟ್", "ta": "பீட்ரூட்" },
+      "aliases": ["beetroot", "beet", "chukandar"]
+    },
+    {
+      "id": "fruits-veg-011",
+      "name": "Cabbage",
+      "size": "1 kg",
+      "group": "Vegetables",
+      "price": 35,
+      "local": { "hi": "पत्ता गोभी", "kn": "ಎಲೆಕೋಸು", "ta": "முட்டைக்கோஸ்" },
+      "aliases": ["cabbage", "patta gobi", "ele kosu", "muttaikose"]
+    },
+    {
+      "id": "fruits-veg-012",
+      "name": "Cauliflower",
+      "size": "1 pc",
+      "group": "Vegetables",
+      "price": 40,
+      "local": { "hi": "फूलगोभी", "kn": "ಹೂಕೋಸು", "ta": "காலிஃபிளவர்" },
+      "aliases": ["cauliflower", "gobi", "phool gobi", "hookosu"]
+    },
+    {
+      "id": "fruits-veg-013",
+      "name": "Brinjal",
+      "size": "500 g",
+      "group": "Vegetables",
+      "price": 30,
+      "local": { "hi": "बैंगन", "kn": "ಬದನೆಕಾಯಿ", "ta": "கத்தரிக்காய்" },
+      "aliases": ["brinjal", "baingan", "badanekai", "kathirikai", "eggplant"]
+    },
+    {
+      "id": "fruits-veg-014",
+      "name": "Lady's Finger (Okra)",
+      "size": "500 g",
+      "group": "Vegetables",
+      "price": 35,
+      "local": { "hi": "भिंडी", "kn": "ಬೆಂಡೆಕಾಯಿ", "ta": "வெண்டைக்காய்" },
+      "aliases": ["ladies finger", "bhindi", "bendekai", "vendakkai", "okra"]
+    },
+    {
+      "id": "fruits-veg-015",
+      "name": "Capsicum",
+      "size": "500 g",
+      "group": "Vegetables",
+      "price": 50,
+      "local": { "hi": "शिमला मिर्च", "kn": "ದಪ್ಪ ಮೆಣಸಿನಕಾಯಿ", "ta": "குடைமிளகாய்" },
+      "aliases": ["capsicum", "shimla mirch", "dappa menasinakai", "kudamilagai", "bell pepper"]
+    },
+    {
+      "id": "fruits-veg-016",
+      "name": "Cucumber",
+      "size": "500 g",
+      "group": "Vegetables",
+      "price": 25,
+      "local": { "hi": "खीरा", "kn": "ಸೌತೆಕಾಯಿ", "ta": "வெள்ளரிக்காய்" },
+      "aliases": ["cucumber", "kheera", "southekai", "vellarikai"]
+    },
+    {
+      "id": "fruits-veg-017",
+      "name": "Radish",
+      "size": "500 g",
+      "group": "Vegetables",
+      "price": 25,
+      "local": { "hi": "मूली", "kn": "ಮೂಲಂಗಿ", "ta": "முள்ளங்கி" },
+      "aliases": ["radish", "mooli", "moolangi", "mullangi"]
+    },
+    {
+      "id": "fruits-veg-018",
+      "name": "Drumstick",
+      "size": "250 g",
+      "group": "Vegetables",
+      "price": 40,
+      "local": { "hi": "सहजन", "kn": "ನುಗ್ಗೆಕಾಯಿ", "ta": "முருங்கைக்காய்" },
+      "aliases": ["drumstick", "nuggekai", "murungakkai", "sahjan"]
+    },
+    {
+      "id": "fruits-veg-019",
+      "name": "French Beans",
+      "size": "500 g",
+      "group": "Beans & Gourds",
+      "price": 50,
+      "local": { "hi": "फ्रेंच बीन्स", "kn": "ಹುರುಳಿಕಾಯಿ", "ta": "பீன்ஸ்" },
+      "aliases": ["beans", "french beans", "hurulikai"]
+    },
+    {
+      "id": "fruits-veg-020",
+      "name": "Green Peas",
+      "size": "500 g",
+      "group": "Beans & Gourds",
+      "price": 60,
+      "local": { "hi": "हरी मटर", "kn": "ಹಸಿ ಬಟಾಣಿ", "ta": "பச்சைப் பட்டாணி" },
+      "aliases": ["peas", "matar", "batani", "pattani", "green peas"]
+    },
+    {
+      "id": "fruits-veg-021",
+      "name": "Avarekai (Field Beans)",
+      "size": "500 g",
+      "group": "Beans & Gourds",
+      "price": 60,
+      "local": { "hi": "सेम", "kn": "ಅವರೆಕಾಯಿ", "ta": "அவரைக்காய்" },
+      "aliases": ["avarekai", "avare", "field beans", "avarakkai", "sem"]
+    },
+    {
+      "id": "fruits-veg-022",
+      "name": "Bottle Gourd",
+      "size": "1 kg",
+      "group": "Beans & Gourds",
+      "price": 40,
+      "local": { "hi": "लौकी", "kn": "ಸೋರೆಕಾಯಿ", "ta": "சுரைக்காய்" },
+      "aliases": ["bottle gourd", "lauki", "sorekai", "suraikai", "dudhi"]
+    },
+    {
+      "id": "fruits-veg-023",
+      "name": "Bitter Gourd",
+      "size": "500 g",
+      "group": "Beans & Gourds",
+      "price": 35,
+      "local": { "hi": "करेला", "kn": "ಹಾಗಲಕಾಯಿ", "ta": "பாகற்காய்" },
+      "aliases": ["bitter gourd", "karela", "hagalakai", "pavakkai"]
+    },
+    {
+      "id": "fruits-veg-024",
+      "name": "Ridge Gourd",
+      "size": "500 g",
+      "group": "Beans & Gourds",
+      "price": 35,
+      "local": { "hi": "तोरई", "kn": "ಹೀರೆಕಾಯಿ", "ta": "பீர்க்கங்காய்" },
+      "aliases": ["ridge gourd", "turai", "heerekai", "peerkangai"]
+    },
+    {
+      "id": "fruits-veg-025",
+      "name": "Chow Chow (Chayote)",
+      "size": "500 g",
+      "group": "Beans & Gourds",
+      "price": 25,
+      "local": { "hi": "चाऊ चाऊ", "kn": "ಸೀಮೆ ಬದನೆಕಾಯಿ", "ta": "சௌ சௌ" },
+      "aliases": ["chow chow", "chayote", "seeme badanekai", "bangalore brinjal"]
+    },
+    {
+      "id": "fruits-veg-026",
+      "name": "Coriander Leaves",
+      "size": "1 bunch",
+      "group": "Leafy Greens",
+      "price": 15,
+      "local": { "hi": "धनिया पत्ता", "kn": "ಕೊತ್ತಂಬರಿ ಸೊಪ್ಪು", "ta": "கொத்தமல்லி" },
+      "aliases": ["coriander", "dhaniya", "kothambari soppu", "kothamalli", "cilantro"]
+    },
+    {
+      "id": "fruits-veg-027",
+      "name": "Mint Leaves",
+      "size": "1 bunch",
+      "group": "Leafy Greens",
+      "price": 10,
+      "local": { "hi": "पुदीना", "kn": "ಪುದೀನ", "ta": "புதினா" },
+      "aliases": ["mint", "pudina", "pudhina"]
+    },
+    {
+      "id": "fruits-veg-028",
+      "name": "Curry Leaves",
+      "size": "1 bunch",
+      "group": "Leafy Greens",
+      "price": 10,
+      "local": { "hi": "करी पत्ता", "kn": "ಕರಿಬೇವು", "ta": "கறிவேப்பிலை" },
+      "aliases": ["curry leaves", "kadi patta", "karibevu", "karuveppilai"]
+    },
+    {
+      "id": "fruits-veg-029",
+      "name": "Spinach (Palak)",
+      "size": "1 bunch",
+      "group": "Leafy Greens",
+      "price": 20,
+      "local": { "hi": "पालक", "kn": "ಪಾಲಕ್ ಸೊಪ್ಪು", "ta": "பசலைக் கீரை" },
+      "aliases": ["palak", "spinach", "palak soppu", "pasalai keerai", "keerai"]
+    },
+    {
+      "id": "fruits-veg-030",
+      "name": "Methi Leaves",
+      "size": "1 bunch",
+      "group": "Leafy Greens",
+      "price": 20,
+      "local": { "hi": "मेथी", "kn": "ಮೆಂತ್ಯ ಸೊಪ್ಪು", "ta": "வெந்தயக் கீரை" },
+      "aliases": ["methi", "fenugreek leaves", "menthya soppu", "vendhaya keerai"]
+    },
+    {
+      "id": "fruits-veg-031",
+      "name": "Spring Onion",
+      "size": "1 bunch",
+      "group": "Leafy Greens",
+      "price": 20,
+      "local": { "hi": "हरा प्याज़", "kn": "ಈರುಳ್ಳಿ ಸೊಪ್ಪು", "ta": "வெங்காயத்தாள்" },
+      "aliases": ["spring onion", "hara pyaz", "eerulli soppu", "vengaya thaal"]
+    },
+    {
+      "id": "fruits-veg-032",
+      "name": "Banana (Yelakki)",
+      "size": "1 dozen",
+      "group": "Fruits",
+      "price": 70,
+      "local": { "hi": "इलायची केला", "kn": "ಏಲಕ್ಕಿ ಬಾಳೆಹಣ್ಣು", "ta": "ஏலக்கி வாழைப்பழம்" },
+      "aliases": ["banana", "yelakki", "elakki", "kela", "balehannu", "vazhaipazham"]
+    },
+    {
+      "id": "fruits-veg-033",
+      "name": "Banana (Robusta)",
+      "size": "1 dozen",
+      "group": "Fruits",
+      "price": 50,
+      "local": { "hi": "केला", "kn": "ಪಚ್ಚಬಾಳೆ ಹಣ್ಣು", "ta": "பச்சை வாழைப்பழம்" },
+      "aliases": ["banana", "robusta", "pachbale", "kela"]
+    },
+    {
+      "id": "fruits-veg-034",
+      "name": "Apple (Shimla)",
+      "size": "1 kg",
+      "group": "Fruits",
+      "price": 200,
+      "local": { "hi": "सेब", "kn": "ಸೇಬು", "ta": "ஆப்பிள்" },
+      "aliases": ["apple", "seb", "sebu", "shimla apple"]
+    },
+    {
+      "id": "fruits-veg-035",
+      "name": "Orange",
+      "size": "1 kg",
+      "group": "Fruits",
+      "price": 100,
+      "local": { "hi": "संतरा", "kn": "ಕಿತ್ತಳೆ", "ta": "ஆரஞ்சு" },
+      "aliases": ["orange", "santra", "kittale", "narangi"]
+    },
+    {
+      "id": "fruits-veg-036",
+      "name": "Pomegranate",
+      "size": "1 kg",
+      "group": "Fruits",
+      "price": 200,
+      "local": { "hi": "अनार", "kn": "ದಾಳಿಂಬೆ", "ta": "மாதுளை" },
+      "aliases": ["pomegranate", "anar", "dalimbe", "mathulai"]
+    },
+    {
+      "id": "fruits-veg-037",
+      "name": "Papaya",
+      "size": "1 kg",
+      "group": "Fruits",
+      "price": 50,
+      "local": { "hi": "पपीता", "kn": "ಪರಂಗಿ ಹಣ್ಣು", "ta": "பப்பாளி" },
+      "aliases": ["papaya", "papita", "parangi hannu", "pappali"]
+    },
+    {
+      "id": "fruits-veg-038",
+      "name": "Grapes",
+      "size": "500 g",
+      "group": "Fruits",
+      "price": 60,
+      "local": { "hi": "अंगूर", "kn": "ದ್ರಾಕ್ಷಿ", "ta": "திராட்சை" },
+      "aliases": ["grapes", "angoor", "drakshi", "thiratchai"]
+    },
+    {
+      "id": "fruits-veg-039",
+      "name": "Mango (Alphonso)",
+      "size": "1 kg",
+      "group": "Fruits",
+      "price": 180,
+      "local": { "hi": "अल्फांसो आम", "kn": "ಆಲ್ಫೋನ್ಸೋ ಮಾವಿನಹಣ್ಣು", "ta": "அல்போன்சா மாம்பழம்" },
+      "aliases": ["mango", "alphonso", "aam", "mavinahannu", "mambazham", "badami"]
+    },
+    {
+      "id": "fruits-veg-040",
+      "name": "Guava",
+      "size": "1 kg",
+      "group": "Fruits",
+      "price": 80,
+      "local": { "hi": "अमरूद", "kn": "ಸೀಬೆಹಣ್ಣು", "ta": "கொய்யா" },
+      "aliases": ["guava", "amrood", "seebe hannu", "koyya", "perala"]
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "name": "munshi",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Munshi: every shop's AI munshi. Voice-first store setup and ordering for Indian small shops.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "db:local": "tsx scripts/local-db.ts",
+    "db:push": "prisma db push",
+    "db:deploy": "prisma migrate deploy",
+    "db:seed": "tsx prisma/seed.ts",
+    "setup:agenticorg": "tsx scripts/setup-agenticorg.ts",
+    "setup:elevenlabs": "tsx scripts/setup-elevenlabs.ts",
+    "postinstall": "prisma generate"
+  },
+  "dependencies": {
+    "@elevenlabs/react": "1.19.1",
+    "@prisma/client": "6.19.3",
+    "jose": "6.2.13",
+    "next": "15.5.28",
+    "qrcode": "1.5.4",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "22.20.5",
+    "@types/qrcode": "1.5.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "dotenv": "17.4.2",
+    "embedded-postgres": "17.10.0-beta.17",
+    "prisma": "6.19.3",
+    "tailwindcss": "4.3.3",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "vitest": "3.2.7"
+  }
+}

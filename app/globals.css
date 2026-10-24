@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #1f1b3f;
+  --color-ink-soft: #4a4668;
+  --color-turmeric: #f2b705;
+  --color-turmeric-deep: #d99a00;
+  --color-leaf: #127a4b;
+  --color-leaf-dark: #0c5c38;
+  --color-sindoor: #b3261e;
+  --color-paper: #f7f7f4;
+  --color-card: #ffffff;
+  --color-line: #e3e1d9;
+  --color-mute: #6b6880;
+
+  --font-display: "Baloo 2", "Baloo Tamma 2", "Baloo Thambi 2", system-ui, sans-serif;
+  --font-sans: "Noto Sans", "Noto Sans Kannada", "Noto Sans Devanagari", "Noto Sans Tamil", system-ui, sans-serif;
+
+  --radius-board: 18px;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-display);
+  line-height: 1.15;
+}
+
+/* Kannada and Tamil script runs taller; give it room. */
+:lang(kn),
+:lang(ta) {
+  line-height: 1.6;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-turmeric-deep);
+  outline-offset: 2px;
+}
+
+/* The painted signboard: the one loud element in the system. */
+.signboard {
+  background:
+    radial-gradient(120% 140% at 0% 0%, #ffd23f 0%, transparent 60%),
+    var(--color-turmeric);
+  border: 3px solid var(--color-ink);
+  border-radius: var(--radius-board);
+  box-shadow: 0 5px 0 var(--color-ink);
+}
+
+.mic-ring {
+  box-shadow: 0 0 0 0 rgb(242 183 5 / 0.6);
+  animation: mic-pulse 1.6s ease-out infinite;
+}
+
+@keyframes mic-pulse {
+  to {
+    box-shadow: 0 0 0 22px rgb(242 183 5 / 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mic-ring {
+    animation: none;
+  }
+}
