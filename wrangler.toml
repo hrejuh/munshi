@@ -1,0 +1,9 @@
+# Lets Cloudflare's Git build (which runs from the repo root) deploy the Worker in worker/.
+# Keep in sync with worker/wrangler.toml.
+name = "munshi"
+main = "worker/src/index.js"
+compatibility_date = "2026-10-01"
+
+[[kv_namespaces]]
+binding = "DB"
+id = "244922034196456091cedf5a73a60495"
