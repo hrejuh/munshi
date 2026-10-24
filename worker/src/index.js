@@ -43,6 +43,8 @@ export default {
       // never echo the webhook url back: it contains the secret
       return Response.json({ setWebhook: { ok: hook.ok, description: hook.description }, setMyCommands: { ok: cmds.ok, description: cmds.description } });
     }
+    if (req.method === "GET" && url.pathname === "/login") return loginPage(env);
+    if (req.method === "POST" && url.pathname === "/api/login") return loginApi(req, env);
     if (url.pathname === "/wa-templates") {
       if (!env.WEBHOOK_SECRET || url.searchParams.get("key") !== env.WEBHOOK_SECRET) return new Response("forbidden", { status: 403 });
       if (!env.MSG91_AUTH_KEY || !env.MSG91_WHATSAPP_NUMBER) return Response.json({ error: "MSG91_AUTH_KEY / MSG91_WHATSAPP_NUMBER not set" });
@@ -972,6 +974,7 @@ async function cashToday(c, sid) {
 async function orderApi(req, env, sid) {
   const c = { env, st: new Store(env.DB), bg: [] };
   const json = (o, status = 200) => Response.json(o, { status, headers: { "cache-control": "no-store" } });
+  if (softLimited(ORDER_HITS, req, 20)) return json({ error: "Too many orders. Wait a few minutes." }, 429);
   const shop = sid ? await getShop(c, sid) : null;
   if (!shop) return json({ error: "Shop not found." }, 404);
   const raw = await req.text();
@@ -1217,9 +1220,8 @@ async function publishPage(c, sid) {
 const FONTS = `<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,650;1,9..144,500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">`;
 
 const PAGE_CSS = `
-:root{--bg:#fbf5ea;--bg2:#f4e9d6;--card:#fffdf8;--ink:#2a1a0e;--soft:#7c6a55;--line:#ebdcc4;--acc:#ec8a0b;--acc2:#b9620a;--leaf:#2f6b4f;--sh:0 1px 0 rgba(80,50,10,.04),0 8px 24px -12px rgba(80,50,10,.18);
+:root{color-scheme:light;--bg:#fbf5ea;--bg2:#f4e9d6;--card:#fffdf8;--ink:#2a1a0e;--soft:#7c6a55;--line:#ebdcc4;--acc:#ec8a0b;--acc2:#b9620a;--leaf:#2f6b4f;--sh:0 1px 0 rgba(80,50,10,.04),0 8px 24px -12px rgba(80,50,10,.18);
 --disp:"Fraunces",Georgia,serif;--body:"Manrope",system-ui,-apple-system,"Segoe UI","Noto Sans","Noto Sans Devanagari","Noto Sans Kannada","Noto Sans Tamil",sans-serif}
-@media (prefers-color-scheme:dark){:root{--bg:#16110c;--bg2:#1e1710;--card:#211911;--ink:#f5ead9;--soft:#ad9a80;--line:#33281c;--acc:#f3a03b;--acc2:#ffbd66;--leaf:#7cc4a0;--sh:0 8px 24px -12px rgba(0,0,0,.6)}}
 *{box-sizing:border-box;margin:0}
 html{-webkit-text-size-adjust:100%}
 body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--body);padding:22px 16px 110px;-webkit-font-smoothing:antialiased}
@@ -1235,7 +1237,6 @@ a.row:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--acc)
 .row b{font-weight:650}.row small{display:block;color:var(--soft);font-size:13px;margin-top:1px}
 .lft{display:flex;align-items:center;gap:12px;min-width:0}
 .av{width:44px;height:44px;border-radius:14px;flex:none;display:grid;place-items:center;font:600 19px/1 var(--disp);color:#3a2208;background:hsl(var(--hu,32) 85% 80%)}
-@media (prefers-color-scheme:dark){.av{background:hsl(var(--hu,32) 45% 30%);color:#fbe7c8}}
 .price{font-weight:700;color:var(--acc2);white-space:nowrap}
 .go{position:fixed;left:16px;right:16px;bottom:16px;max-width:600px;margin:0 auto;display:flex;justify-content:center;align-items:center;gap:10px;text-align:center;background:var(--ink);color:var(--bg);font-weight:700;padding:16px;border-radius:18px;text-decoration:none;box-shadow:0 12px 30px -10px rgba(40,20,0,.5);z-index:5}
 .go em{font-style:normal;background:var(--acc);color:#1d1206;border-radius:999px;padding:2px 10px;font-size:14px}
@@ -1293,7 +1294,7 @@ const SHOP_CSS = FORM_CSS + `
 
 function pageHtml(title, body, o = {}) {
   return new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${h(title)}</title><meta name="theme-color" content="#fbf5ea">${o.desc ? `<meta name="description" content="${h(o.desc)}"><meta property="og:title" content="${h(title)}"><meta property="og:description" content="${h(o.desc)}">` : ""}${FONTS}<style>${PAGE_CSS}${o.css || ""}</style></head><body><main>${body}</main></body></html>`,
+<title>${h(title)}</title><meta name="color-scheme" content="light"><meta name="theme-color" content="#fbf5ea">${o.desc ? `<meta name="description" content="${h(o.desc)}"><meta property="og:title" content="${h(title)}"><meta property="og:description" content="${h(o.desc)}">` : ""}${FONTS}<style>${PAGE_CSS}${o.css || ""}</style></head><body><main>${body}</main></body></html>`,
     { status: o.status || 200, headers: { "content-type": "text/html; charset=utf-8", "cache-control": o.cache || "public, max-age=30" } });
 }
 
@@ -1535,12 +1536,13 @@ async function talkInput(env, req, who) {
   return { text, heard, b, history: turns.length ? `Conversation so far:\n${turns.join("\n")}\n\n` : "" };
 }
 
-const TALK_HITS = new Map(); // per isolate: a soft brake on the public voice endpoint
-function talkLimited(req) {
-  const ip = req.headers.get("cf-connecting-ip") || "?", t = Date.now(), w = TALK_HITS.get(ip);
-  if (!w || t - w[1] > 600000) { TALK_HITS.set(ip, [1, t]); return false; }
-  return ++w[0] > 40;
+const TALK_HITS = new Map(), ORDER_HITS = new Map(); // per isolate: soft brakes on the public endpoints
+function softLimited(hits, req, max) {
+  const ip = req.headers.get("cf-connecting-ip") || "?", t = Date.now(), w = hits.get(ip);
+  if (!w || t - w[1] > 600000) { hits.set(ip, [1, t]); return false; }
+  return ++w[0] > max;
 }
+const talkLimited = req => softLimited(TALK_HITS, req, 40);
 
 // Customers talk to the shop on the web page: the reply is spoken, the cart changes on their screen.
 async function talkApi(req, env, sid) {
@@ -1600,14 +1602,15 @@ const TALK_HTML = `<button class="fab" id="fab" aria-label="Talk">🎙</button>
 const TALK_JS = `
 (() => {
 const K = window.TALK, $t = id => document.getElementById(id);
-let hist = [], live = false, rec = null, stream = null, ac = null, au = null, busy = false;
+let hist = [], live = false, rec = null, stream = null, ac = null, au = null, busy = false, queued = "";
 const say = (cls, text) => { const d = document.createElement("div"); d.className = "mb " + cls; d.textContent = text; $t("msgs").appendChild(d); $t("msgs").scrollTop = 1e9; };
 const state = s => { $t("tkm").className = "tkm " + s; $t("tkm").textContent = s === "on" ? "■" : s === "wait" ? "…" : "🎙"; };
 const b64 = blob => new Promise(r => { const f = new FileReader(); f.onload = () => r(String(f.result).split(",")[1] || ""); f.readAsDataURL(blob); });
 function open() { $t("tk").classList.add("open"); $t("fab").hidden = true; if (!$t("msgs").children.length) say("b", K.hello); }
 function release() { if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; } }
 function close() { live = false; if (rec && rec.state === "recording") { rec.cancel = true; rec.stop(); } if (au) au.pause(); release(); state(""); $t("tk").classList.remove("open"); $t("fab").hidden = false; }
-function next() { state(""); if (live) listen(); else release(); }
+function next() { state(""); if (queued) { const v = queued; queued = ""; return sendText(v); } if (live) listen(); else release(); }
+function sendText(v) { say("u", v); hist.push(["user", v]); live = false; send({ text: v }); }
 async function send(body) {
   busy = true; state("wait");
   let r;
@@ -1661,7 +1664,7 @@ $t("tkm").onclick = () => {
   if (busy) return;
   live = true; listen();
 };
-$t("tkf").onsubmit = e => { e.preventDefault(); const v = $t("tki").value.trim(); if (!v || busy) return; $t("tki").value = ""; say("u", v); hist.push(["user", v]); live = false; send({ text: v }); };
+$t("tkf").onsubmit = e => { e.preventDefault(); const v = $t("tki").value.trim(); if (!v) return; $t("tki").value = ""; if (busy) { queued = v; return say("n", "…"); } sendText(v); };
 })();
 `;
 
@@ -1776,6 +1779,7 @@ function managePage(sid, shop) {
 .say small{display:block;color:var(--soft);margin-bottom:4px}
 .top{display:flex;justify-content:space-between;align-items:center}
 .top a{color:var(--soft);font-size:14px}
+.tr{display:flex;align-items:center;gap:14px}.tr .login{text-decoration:none}
 .tp{display:grid;grid-template-columns:1fr 110px;gap:6px}
 h2{font:650 24px var(--disp);letter-spacing:-.01em;margin:34px 0 4px}
 details.set{margin-top:34px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:4px 16px 14px}
@@ -1797,7 +1801,7 @@ details.set[open] summary:after{content:"−"}
 `;
   const data = JSON.stringify(shopView(shop)).replace(/</g, "\\u003c");
   return new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#fbf5ea"><title>${h(shop.shopName)} · manage</title>${FONTS}<style>${css}</style></head><body><main>
+<meta name="color-scheme" content="light"><meta name="theme-color" content="#fbf5ea"><title>${h(shop.shopName)} · manage</title>${FONTS}<style>${css}</style></head><body><main>
 <div class="top"><span class="mark"><i></i>munshi</span><a href="/s/${encodeURIComponent(sid)}" target="_blank">view ↗</a></div>
 <div class="shead rise" style="display:flex;align-items:center;gap:14px;margin-top:22px"><span class="av" style="--hu:${hue(shop.shopName)};width:56px;height:56px;border-radius:18px;font-size:26px">${h(initial(shop.shopName))}</span><div><h1 style="margin:0">${h(shop.shopName)}</h1><p class="sub" id="cash" style="margin:0"></p></div></div>
 <div class="say" id="say"></div>
@@ -1914,7 +1918,6 @@ main{max-width:1040px}
 .phone:before{content:"";position:absolute;inset:-14px -14px auto auto;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--acc) 35%,transparent),transparent 70%);z-index:-1}
 .bub{max-width:85%;padding:10px 14px;border-radius:18px;font-size:14px;margin-top:10px}
 .bub.me{margin-left:auto;background:#dff3dc;color:#183b1a;border-bottom-right-radius:6px}
-@media (prefers-color-scheme:dark){.bub.me{background:#23452a;color:#dff3dc}}
 .bub.bot{background:var(--bg2);border-bottom-left-radius:6px}
 .wave{display:flex;align-items:center;gap:3px;height:22px}
 .wave i{width:3px;border-radius:2px;background:currentColor;opacity:.7;animation:w 1.1s ease-in-out infinite}
@@ -1944,11 +1947,131 @@ h2{font:650 clamp(26px,5vw,34px)/1.1 var(--disp);letter-spacing:-.015em;margin:8
 footer{margin-top:40px;color:var(--soft);font-size:13px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
 `;
 
+// ---------- owner log in by phone: MSG91 OTP widget on the page, the server verifies the token ----------
+
+const LOGIN_HITS = new Map(); // per isolate: a brake on code guessing
+const loginLimited = req => softLimited(LOGIN_HITS, req, 10);
+const digits10 = s => String(s || "").replace(/\D/g, "").slice(-10);
+const jsStr = v => JSON.stringify(String(v || "")).replace(/</g, "\\u003c");
+
+// The mobile MSG91 says it verified (same fields Qrave's extractVerifiedMobile reads).
+function verifiedMobile(data) {
+  const d = data || {};
+  for (const c of [d.message, d.mobile, d.identifier, d.phone, d.data && d.data.mobile, d.data && d.data.identifier, d.data && d.data.message]) {
+    if (typeof c !== "string" && typeof c !== "number") continue;
+    const t = String(c).trim();
+    if (/^\+?\d{10,15}$/.test(t)) return digits10(t);
+  }
+  return "";
+}
+
+async function loginPage(env) {
+  const c = { env, st: new Store(env.DB) };
+  const mark = `<a class="mark" href="/" style="text-decoration:none"><i></i>munshi</a>`;
+  const css = FORM_CSS + `button.btn{font:inherit;cursor:pointer}#out{display:grid;gap:10px;margin-top:18px}#out .pill{justify-content:center}`;
+  const headers = { cache: "no-store" };
+  if (!env.MSG91_WIDGET_ID || !env.MSG91_TOKEN_AUTH) {
+    const tg = `https://t.me/${await botName(c)}`;
+    return pageHtml("Log in · munshi", `<div class="top">${mark}<a href="/">back</a></div><h1>Log in</h1>
+<p class="note">Login by phone is not set up yet. <a href="${tg}">Start on Telegram</a></p>`, { css, ...headers });
+  }
+  return pageHtml("Log in · munshi", `<div class="top">${mark}<a href="/">back</a></div>
+<h1>Log in</h1>
+<p class="note" id="msg" hidden></p>
+<form id="pf" class="f"><label for="pn">phone</label><input id="pn" type="tel" inputmode="tel" autocomplete="tel" maxlength="16" placeholder="98765 43210" required>
+<button id="pb" class="btn main" type="submit">Send code</button></form>
+<form id="cf" class="f" hidden><label for="cd">code</label><input id="cd" inputmode="numeric" autocomplete="one-time-code" maxlength="4" placeholder="1234" required>
+<button id="cb" class="btn main" type="submit">Verify</button></form>
+<div id="out"></div>
+<script>
+(() => {
+const W = ${jsStr(env.MSG91_WIDGET_ID)}, T = ${jsStr(env.MSG91_TOKEN_AUTH)};
+const $ = id => document.getElementById(id);
+const say = t => { $("msg").textContent = t; $("msg").hidden = !t; };
+const reason = e => typeof e === "string" ? e : (e && e.message) || "";
+let ready = false, phone = "";
+const s = document.createElement("script");
+s.src = "https://control.msg91.com/app/assets/otp-provider/otp-provider.js";
+s.async = true;
+s.onerror = () => say("Could not load the code service.");
+s.onload = () => setTimeout(() => {
+  try { window.initSendOTP({ widgetId: W, tokenAuth: T, exposeMethods: true, success() {}, failure() {} }); } catch (e) {}
+  let n = 0;
+  const iv = setInterval(() => {
+    if (window.sendOtp && window.verifyOtp) { clearInterval(iv); ready = true; }
+    else if (++n >= 50) { clearInterval(iv); say("The code service did not start."); }
+  }, 200);
+}, 500);
+document.body.appendChild(s);
+const links = list => {
+  $("cf").hidden = true; $("pf").hidden = true; $("out").innerHTML = "";
+  for (const x of list) { const a = document.createElement("a"); a.className = "pill"; a.href = x.url; a.textContent = x.name; $("out").appendChild(a); }
+};
+$("pf").onsubmit = e => {
+  e.preventDefault();
+  phone = $("pn").value.replace(/\\D/g, "").slice(-10);
+  if (phone.length !== 10) return say("Enter the 10-digit number.");
+  if (!ready) return say("One moment.");
+  $("pb").disabled = true;
+  window.sendOtp("91" + phone, () => {
+    $("pb").disabled = false; $("pf").hidden = true; $("cf").hidden = false; $("cd").focus(); say("Code sent.");
+  }, err => { $("pb").disabled = false; say(reason(err) || "Could not send the code."); });
+};
+$("cf").onsubmit = e => {
+  e.preventDefault();
+  const code = $("cd").value.trim();
+  if (!/^\\d{4}$/.test(code)) return say("Enter the 4-digit code.");
+  if (!ready) return say("One moment.");
+  $("cb").disabled = true;
+  const fail = m => { $("cb").disabled = false; say(m); };
+  window.verifyOtp(code, async data => {
+    const token = data && data.message;
+    if (!token) return fail("No code received. Try again.");
+    try {
+      const r = await fetch("/api/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ phone, token }) });
+      const j = await r.json();
+      if (j.url) return (location.href = j.url);
+      if (j.shops) return links(j.shops);
+      fail(j.error || "Could not log in.");
+      if (j.start) links([{ name: "Start on Telegram", url: j.start }]);
+    } catch (x) { fail("Network problem. Try again."); }
+  }, err => fail(reason(err) || "That code did not match."));
+};
+})();
+</script>`, { css, ...headers });
+}
+
+async function loginApi(req, env) {
+  const json = (o, status = 200) => Response.json(o, { status, headers: { "cache-control": "no-store" } });
+  if (!env.MSG91_AUTH_KEY) return json({ error: "Login by phone is not set up yet." }, 503);
+  if (loginLimited(req)) return json({ error: "Too many tries. Wait a few minutes." }, 429);
+  let b;
+  try { b = await req.json(); } catch { return json({ error: "bad request" }, 400); }
+  const phone = digits10(b && b.phone), token = b && typeof b.token === "string" ? b.token : "";
+  if (phone.length !== 10 || !token || token.length > 4000) return json({ error: "Enter your number and the code." }, 400);
+  let data = null;
+  try {
+    const r = await fetch("https://control.msg91.com/api/v5/widget/verifyAccessToken", {
+      method: "POST", headers: { "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify({ authkey: env.MSG91_AUTH_KEY, "access-token": token }),
+    });
+    data = await r.json();
+  } catch { data = null; }
+  // Refuse unless MSG91 says the token is good AND names the verified mobile. Never trust the phone we were sent alone.
+  const mobile = data && data.type === "success" ? verifiedMobile(data) : "";
+  if (!mobile || mobile !== phone) return json({ error: "That code did not match this number." }, 401);
+  const c = { env, st: new Store(env.DB), bg: [] };
+  const mine = (await allShops(c)).filter(([, sh]) => digits10(sh.phone) === phone);
+  if (!mine.length) return json({ error: "No shop with this number.", start: `https://t.me/${await botName(c)}` }, 404);
+  if (mine.length === 1) return json({ url: await manageLink(env, mine[0][0]) });
+  return json({ shops: await Promise.all(mine.map(async ([id, sh]) => ({ name: sh.shopName || id, url: await manageLink(env, id) }))) });
+}
+
 async function homePage(c, mark) {
   const shops = await allShops(c);
   const tg = `https://t.me/${c.bot}`;
   const cards = shops.map(([id, sh]) => `<a class="row" href="/s/${encodeURIComponent(id)}"><span class="lft">${avatar(sh.shopName)}<span><b>${h(sh.shopName)}</b><small>${h(sh.area || "")}</small></span></span><span class="sub">${(sh.items || []).length} items →</span></a>`).join("");
-  const body = `<div class="top">${mark}<a class="pill" href="${tg}">Start</a></div>
+  const body = `<div class="top">${mark}<span class="tr"><a class="login" href="/login">Log in</a><a class="pill" href="${tg}">Start</a></span></div>
 <section class="hero">
   <div>
     <span class="kick rise">● ಕನ್ನಡ · हिंदी · தமிழ் · English</span>

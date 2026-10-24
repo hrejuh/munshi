@@ -13,6 +13,7 @@ const env = { DB, TELEGRAM_TOKEN: "test-token", ELEVENLABS_API_KEY: "x", OPENROU
   TELEGRAPH_TOKEN: "x", WEBHOOK_SECRET: "s3cret" };
 
 const calls = [];
+let msg91Reply = { type: "error" }; // what the MSG91 token check answers
 const errors = [];
 const origLog = console.log;
 console.log = (...a) => { if (/ERR|failed/.test(String(a[0]))) errors.push(a.join(" ")); };
@@ -45,6 +46,7 @@ globalThis.fetch = async (url, init = {}) => {
     else out = { add: [{ index: 1, qty: 2 }], remove: [], checkout: true, reply: "2 samosa added. Name and address?" };
     return json({ choices: [{ message: { content: JSON.stringify(out) } }] });
   }
+  if (url.includes("control.msg91.com/api/v5/widget/verifyAccessToken")) return json(msg91Reply);
   if (url.includes("telegra.ph")) return json({ ok: true, result: { url: "https://telegra.ph/Ravi-Stores-10-24" } });
   throw new Error("unexpected fetch " + url);
 };
@@ -242,7 +244,7 @@ assert.match(mp, /t\.me\/share\/url\?url=/);
 assert.match(mp, /id="copy"/);
 assert.match(mp, /<svg[^>]*aria-label="QR code"[\s\S]*?<path d="M/);
 assert.ok(page.includes("https://wa.me/?text="), "share on the public page");
-assert.equal(qrMatrix("https://munshi.hrejuh.com/s/" + sid).length, 33, "version 4");
+assert.equal(qrMatrix("https://munshi.hrejuh.com/s/" + sid).length, 29, "version 3: the shorter domain fits");
 assert.equal(qrMatrix("x".repeat(300)), null, "too long for v10");
 
 // owner web dashboard: orders, valid transitions only, cash collected
@@ -298,6 +300,25 @@ assert.deepEqual(await (await W(`/api/o/${up.oid}?c=${up.code}`)).json(), { stat
 ust = await (await W(up.url)).text();
 assert.match(ust, /Paid by UPI/);
 assert.ok(!ust.includes("upi://"), "no pay button once paid");
+
+// owner log in by phone: the page, then MSG91 must confirm the same mobile
+const LG = { ...env, MSG91_AUTH_KEY: "k", MSG91_WIDGET_ID: "w", MSG91_TOKEN_AUTH: "t" };
+const login = b => worker.fetch(new Request("https://x.dev/api/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(b) }), LG, {});
+const lp = await worker.fetch(new Request("https://x.dev/login"), env, {});
+assert.equal(lp.status, 200);
+assert.match(await lp.text(), /not set up yet/, "no widget keys: says so");
+assert.equal((await worker.fetch(new Request("https://x.dev/login"), LG, {})).status, 200);
+msg91Reply = { type: "success", message: "919876543210" };
+const lr = await (await login({ phone: "98765 43210", token: "jwt" })).json();
+assert.match(lr.url, new RegExp(`^https://munshi.hrejuh.com/m/${sid}\\?k=[0-9a-f]{24}$`), "one shop: its manage link");
+msg91Reply = { type: "success", message: "919000000001" };
+const lm = await login({ phone: "9876543210", token: "jwt" });
+assert.equal(lm.status, 401, "another mobile is refused");
+msg91Reply = { type: "success" };
+assert.equal((await login({ phone: "9876543210", token: "jwt" })).status, 401, "no verified mobile: refused");
+msg91Reply = { type: "error", message: "invalid token" };
+assert.equal((await login({ phone: "9876543210", token: "jwt" })).status, 401, "rejected token");
+assert.equal((await login({ phone: "12", token: "" })).status, 400);
 
 console.log = origLog;
 assert.deepEqual(errors, [], "no errors logged");
