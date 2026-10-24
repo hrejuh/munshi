@@ -4,3 +4,8 @@ shops.json
 *.ogg
 *.mp3
 __pycache__/
+node_modules/
+worker/.wrangler/
+worker/kv-bulk.json
+worker/test/*.out
+.dev.vars

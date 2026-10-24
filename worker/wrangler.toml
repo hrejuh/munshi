@@ -1,0 +1,11 @@
+name = "munshi"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+# Create with: npx wrangler kv namespace create DB  (then paste the id here)
+[[kv_namespaces]]
+binding = "DB"
+id = "REPLACE_WITH_KV_ID"
+
+# Secrets (set with `npx wrangler secret put <NAME>`, never in this file):
+# TELEGRAM_TOKEN, ELEVENLABS_API_KEY, OPENROUTER_API_KEY, GEMINI_API_KEY, TELEGRAPH_TOKEN, WEBHOOK_SECRET

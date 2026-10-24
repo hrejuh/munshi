@@ -17,3 +17,28 @@ Create `.env` with TELEGRAM_TOKEN, ELEVENLABS_API_KEY, OPENROUTER_API_KEY, GEMIN
     python3 bot.py
 
 Built at Airtribe AI Builders Day, Bengaluru, 24 Oct 2026.
+
+## Deploy on Cloudflare
+
+`worker/` is the same bot as a Cloudflare Worker (webhook instead of polling, KV instead of `shops.json`). It also answers voice notes with a voice note (ElevenLabs TTS). No build step and no npm packages.
+
+    cd worker
+    npx wrangler login
+    npx wrangler kv namespace create DB        # paste the printed id into wrangler.toml (REPLACE_WITH_KV_ID)
+    npx wrangler secret put TELEGRAM_TOKEN
+    npx wrangler secret put ELEVENLABS_API_KEY
+    npx wrangler secret put OPENROUTER_API_KEY
+    npx wrangler secret put GEMINI_API_KEY
+    npx wrangler secret put TELEGRAPH_TOKEN
+    npx wrangler secret put WEBHOOK_SECRET     # any long random string of A-Z a-z 0-9 _ -
+    npx wrangler deploy
+
+Stop `bot.py` first (a webhook and long polling can't run together). Then open
+`https://munshi.<your-subdomain>.workers.dev/setup?key=<WEBHOOK_SECRET>` once to register the webhook and the bot commands.
+
+To move existing shops and orders over (sessions are not copied):
+
+    node scripts/import.mjs ../shops.json kv-bulk.json
+    npx wrangler kv bulk put kv-bulk.json --binding DB --remote
+
+Test locally with stubbed APIs: `node test/smoke.mjs`.
