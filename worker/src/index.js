@@ -9,9 +9,7 @@ const ADMIN = 1238521561;
 const IST_MS = 5.5 * 3600 * 1000;
 const VOICE_ID = "cgSgspJ2msm6clMCkdW9";
 const COMMANDS = [
-  { command: "shop", description: "My shop" }, { command: "sales", description: "Sales" },
-  { command: "orders", description: "Orders" }, { command: "web", description: "Manage on the web" },
-  { command: "new", description: "Start a new shop" },
+  { command: "web", description: "Open my shop" }, { command: "new", description: "New shop" },
 ];
 let BOT_NAME = null;
 
@@ -437,16 +435,16 @@ async function startOnboarding(c, chat) {
   clearObj(s);
   Object.assign(s, { step: "ob_name", draft: {} });
   await save(c);
-  await send(c, chat, "🏪 <b>Welcome to Munshi</b>\nLet's open your shop. Speak or type.\n\n<b>What's your shop called?</b>", null,
-    { speak: "Welcome to Munshi. Let's open your shop. What's your shop called?" });
+  await send(c, chat, "🏪 <b>What's your shop called?</b>\n🎙 speak or type", null,
+    { speak: "Welcome to Munshi. What's your shop called?" });
 }
 
 function itemsSummary(items, limit = 30) {
   return items.slice(0, limit).map(i => `• ${h(iname(i))}${i.unit ? " · " + h(i.unit) : ""} — ${rs(i.price)}`).join("\n");
 }
 
-const DONE_BTN = [[{ text: "✅ Done, open my shop", callback_data: "ob_done" }]];
-const ITEMS_BTNS = [[{ text: "📋 Start from a template", callback_data: "tpl" }], ...DONE_BTN];
+const DONE_BTN = [[{ text: "✅ Open my shop", callback_data: "ob_done" }]];
+const ITEMS_BTNS = [[{ text: "📋 Template", callback_data: "tpl" }], ...DONE_BTN];
 const MAX_ITEMS = 60; // a Telegram keyboard holds 100 buttons; the catalogue keeps one per item
 const LANGS = [["kn", "ಕನ್ನಡ"], ["hi", "हिन्दी"], ["ta", "தமிழ்"], ["en", "English"]];
 
@@ -468,11 +466,11 @@ async function onboardingStep(c, chat, s, m) {
   if (step === "ob_phone") {
     const phone = (m.contact || {}).phone_number || m.text || "";
     const digits = phone.replace(/\D/g, "").slice(-10);
-    if (digits.length < 10) return send(c, chat, "Please send a 10-digit number, or tap the button.", null, { speak: true });
+    if (digits.length < 10) return send(c, chat, "10-digit number, please.", null, { speak: true });
     d.phone = digits;
     s.step = "ob_loc";
     await save(c);
-    return tg(c, "sendMessage", { chat_id: chat, text: "📍 Share your shop's location, for delivery distance",
+    return tg(c, "sendMessage", { chat_id: chat, text: "📍 Shop location?",
       reply_markup: { keyboard: [[{ text: "📍 Send shop location", request_location: true }], [{ text: "Skip" }]],
         resize_keyboard: true, one_time_keyboard: true } });
   }
@@ -481,8 +479,8 @@ async function onboardingStep(c, chat, s, m) {
     s.step = "ob_items";
     await save(c);
     await tg(c, "sendMessage", { chat_id: chat, text: "✓", reply_markup: { remove_keyboard: true } });
-    return send(c, chat, "🎙 <b>Now, what do you sell?</b>\nSay items with prices, like <i>\"aata 5 kilo 260, chawal kilo 58\"</i>.\nSend as many as you like.",
-      ITEMS_BTNS, { speak: "Now, what do you sell? Say items with prices." });
+    return send(c, chat, "🎙 <b>What do you sell?</b>\n<i>chai 15, samosa 20</i>",
+      ITEMS_BTNS, { speak: "What do you sell? Say items with prices." });
   }
   const t = await heard(c, m, chat);
   if (!t) return;
@@ -490,13 +488,13 @@ async function onboardingStep(c, chat, s, m) {
     d.shopName = await clean(c, "What's your shop called?", t);
     s.step = "ob_area";
     await save(c);
-    return send(c, chat, `<b>${h(d.shopName)}</b> ✓\n\n📍 <b>Which area?</b>`, null, { speak: true });
+    return send(c, chat, `<b>${h(d.shopName)}</b> ✓\n📍 <b>Area?</b>`, null, { speak: true });
   }
   if (step === "ob_area") {
     d.area = await clean(c, "Which area is your shop in?", t);
     s.step = "ob_phone";
     await save(c);
-    const text = `📍 ${d.area} ✓\n\n📞 Your WhatsApp number, for orders?`;
+    const text = `📞 WhatsApp number?`;
     speak(c, chat, text);
     return tg(c, "sendMessage", { chat_id: chat, text,
       reply_markup: { keyboard: [[{ text: "📱 Share my number", request_contact: true }]], resize_keyboard: true, one_time_keyboard: true } });
@@ -504,11 +502,11 @@ async function onboardingStep(c, chat, s, m) {
   if (step === "ob_items") {
     await tg(c, "sendChatAction", { chat_id: chat, action: "typing" });
     const fresh = await parseItems(c, t);
-    if (!fresh.length) return send(c, chat, "No prices caught. Try: <i>rice 1 kilo 60</i>", null, { speak: true });
+    if (!fresh.length) return send(c, chat, "No prices heard. Try <i>rice 60</i>", null, { speak: true });
     d.items = (d.items || []).concat(fresh);
     await save(c);
-    return send(c, chat, `Added ${fresh.length}:\n${itemsSummary(fresh)}\n\n<b>${d.items.length} items so far.</b> Send more, or:`, ITEMS_BTNS,
-      { speak: `Added ${fresh.length}. ${d.items.length} items so far. Send more, or tap done.` });
+    return send(c, chat, `Added ${fresh.length} · <b>${d.items.length}</b> total\n${itemsSummary(fresh, 10)}`, ITEMS_BTNS,
+      { speak: `Added ${fresh.length}. Say more, or tap done.` });
   }
 }
 
@@ -525,14 +523,13 @@ async function applyTemplate(c, chat, s, cat, lang) {
   if (!fresh.length) return send(c, chat, `You have ${MAX_ITEMS} items already.`, DONE_BTN);
   d.items = (d.items || []).concat(fresh);
   await save(c);
-  return send(c, chat, `📋 Added ${fresh.length} from ${h(t.label.en)}:\n${itemsSummary(fresh, 8)}${fresh.length > 8 ? "\n…" : ""}\n\n` +
-    `<b>${d.items.length} items so far.</b> Change prices later in ✏️ Edit items. Send more, or:`, ITEMS_BTNS);
+  return send(c, chat, `📋 Added ${fresh.length} from ${h(t.label.en)} · <b>${d.items.length}</b> total\n${itemsSummary(fresh, 6)}${fresh.length > 6 ? "\n…" : ""}`, ITEMS_BTNS);
 }
 
 async function finishOnboarding(c, chat) {
   const s = await sess(c, chat);
   const d = s.draft || {};
-  if (!(d.items && d.items.length)) return send(c, chat, "Add at least one item first.");
+  if (!(d.items && d.items.length)) return send(c, chat, "Add an item first.");
   let sid = (d.shopName || "shop").toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 12) || "shop";
   sid += randChars("abcdefghijklmnopqrstuvwxyz", 3);
   const shop = { shopName: d.shopName || "My shop", area: d.area || "", phone: d.phone || "", items: d.items.slice(0, 60),
@@ -544,12 +541,8 @@ async function finishOnboarding(c, chat) {
   await save(c);
   await publishPage(c, sid);
   console.log(`SHOP ${sid} ${d.shopName} items=${d.items.length}`);
-  const link = shopLink(c, sid);
-  await send(c, chat, `🎉 <b>${h(d.shopName)} is open</b>\n\nSend this to customers:\n${link}\n\nManage your shop on the web (keep private):\n${await manageLink(c.env, sid)}`,
-    [[{ text: "📤 Share on Telegram", url: `https://t.me/share/url?url=${link}` }]]
-      .concat(webLink(shop, sid) ? [[{ text: "🌐 Public page", url: webLink(shop, sid) }]] : []),
-    { speak: `${d.shopName} is open.` });
-  return dashboard(c, chat);
+  await send(c, chat, `🎉 <b>${h(d.shopName)}</b> is live`, await homeButtons(c, sid, shop), { speak: `${d.shopName} is open.` });
+  return;
 }
 
 async function dashboard(c, chat) {
@@ -557,32 +550,26 @@ async function dashboard(c, chat) {
   const [sid, shop] = await myShop(c, chat);
   if (!shop) return startOnboarding(c, chat);
   const today = await sales(c, sid, true);
-  return send(c, chat, `🏪 <b>${h(shop.shopName)}</b>${shop.area ? " · " + h(shop.area) : ""}\n` +
-    `${shop.items.length} items · today ${today.n} orders · ${rs(today.total)}`,
-    [[{ text: "➕ Add items", callback_data: "add" }, { text: "✏️ Edit items", callback_data: "edit" }],
-     [{ text: "📊 Sales", callback_data: "sales" }, { text: "📦 Orders", callback_data: "orders" }],
-     [{ text: "📤 Share catalogue", callback_data: "share" }, { text: "🛵 Delivery", callback_data: "dlv" }],
-     [{ text: "🌐 Manage on web", url: await manageLink(c.env, sid) }],
-     [{ text: "🆕 Start a new shop", callback_data: "new" }]]);
+  return send(c, chat, `🏪 <b>${h(shop.shopName)}</b> · today ${today.n} · ${rs(today.total)}\n🎙 <i>say "chai 12 kar do"</i>`,
+    await homeButtons(c, sid, shop));
 }
 
-function catalogueCard(shop) {
-  const lines = shop.items.slice(0, 25).map(i => `• ${iname(i)}${i.unit ? " · " + i.unit : ""} — ${rs(i.price)}`).join("\n");
-  return `🏪 ${shop.shopName}${shop.area ? " · " + shop.area : ""}\n\n${lines}\n\n🛵 Home delivery or pickup · cash on delivery`;
+// Web first: the dashboard and the menu open inside Telegram as mini apps.
+async function homeButtons(c, sid, shop) {
+  const link = webLink(shop, sid);
+  return [[{ text: "🌐 Manage shop", web_app: { url: await manageLink(c.env, sid) } }],
+    [{ text: "📤 Share", callback_data: "share" }, { text: "👀 View", url: link }]];
 }
 
 async function shareCatalogue(c, chat) {
   const [sid, shop] = await myShop(c, chat);
   if (!shop) return;
-  const card = catalogueCard(shop);
-  const links = `\n\nOrder: ${shopLink(c, sid)}` + (webLink(shop, sid) ? `\nMenu: ${webLink(shop, sid)}` : "");
   const q = encodeURIComponent;
-  await tg(c, "sendMessage", { chat_id: chat, text: card + "\n\n👇 Tap to order", disable_web_page_preview: true,
-    reply_markup: { inline_keyboard: [[{ text: "🛒 Order now", url: shopLink(c, sid) }]]
-      .concat(webLink(shop, sid) ? [[{ text: "🌐 See full menu", url: webLink(shop, sid) }]] : []) } });
-  return send(c, chat, "☝️ Forward that card to your customer groups.\nOr send it on WhatsApp:",
-    [[{ text: "🟢 Share on WhatsApp", url: "https://wa.me/?text=" + q(card + links) }],
-     [{ text: "✈️ Share on Telegram", url: "https://t.me/share/url?url=" + q(shopLink(c, sid)) + "&text=" + q(card) }],
+  await tg(c, "sendMessage", { chat_id: chat, text: `🏪 ${shop.shopName}${shop.area ? " · " + shop.area : ""}\n${webLink(shop, sid)}`,
+    reply_markup: { inline_keyboard: [[{ text: "🛒 Order", url: webLink(shop, sid) }]] } });
+  return send(c, chat, "☝️ Forward it, or:",
+    [[{ text: "🟢 WhatsApp", url: "https://wa.me/?text=" + q(`${shop.shopName}\n${webLink(shop, sid)}`) }],
+     [{ text: "✈️ Telegram", url: "https://t.me/share/url?url=" + q(webLink(shop, sid)) + "&text=" + q(shop.shopName) }],
      [{ text: "← Back", callback_data: "home" }]]);
 }
 
@@ -815,8 +802,8 @@ async function showShop(c, chat, sid) {
   Object.assign(s, { shop: sid, cart: {}, step: null });
   await save(c);
   return tg(c, "sendMessage", { chat_id: chat, parse_mode: "HTML",
-    text: `🏪 <b>${h(shop.shopName)}</b>${shop.area ? " · " + h(shop.area) : ""}\nTap to add · cash on delivery`,
-    reply_markup: catalogueMarkup(sid, shop, {}) });
+    text: `🏪 <b>${h(shop.shopName)}</b>${shop.area ? " · " + h(shop.area) : ""}`,
+    reply_markup: { inline_keyboard: [[{ text: "🛒 Open menu", web_app: { url: webLink(shop, sid) } }]] } });
 }
 
 async function placeOrder(c, chat, s, phone) {
@@ -1009,17 +996,11 @@ async function onMessage(c, m) {
     if (arg.startsWith("s_")) return showShop(c, chat, arg.slice(2));
     return (await myShop(c, chat))[1] ? dashboard(c, chat) : startOnboarding(c, chat);
   }
-  if (text === "/shop" || text === "/menu") return dashboard(c, chat);
+  if (text === "/shop" || text === "/menu" || text === "/web") return dashboard(c, chat);
   if (text === "/new") return startOnboarding(c, chat);
   if (text === "/admin" && chat === ADMIN) return showAdmin(c, chat);
   if (text === "/sales") return showSales(c, chat);
   if (text === "/orders") return showOrders(c, chat);
-  if (text === "/web") {
-    const [sid] = await myShop(c, chat);
-    if (!sid) return startOnboarding(c, chat);
-    const link = await manageLink(c.env, sid);
-    return send(c, chat, `🌐 Manage your shop on the web:\n${link}\n\nKeep this link private.`, [[{ text: "🌐 Open", url: link }]]);
-  }
 
   const step = s.step || "";
   if (step === "setloc") {
@@ -1201,26 +1182,41 @@ async function publishPage(c, sid) {
 
 // ---------- public web pages ----------
 
+const FONTS = `<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,650;1,9..144,500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">`;
+
 const PAGE_CSS = `
-:root{--bg:#fbf6ec;--card:#fff;--ink:#2a1d12;--soft:#7a6a58;--line:#eadfcc;--acc:#e8890c;--acc2:#c56f00}
-@media (prefers-color-scheme:dark){:root{--bg:#17120d;--card:#211a13;--ink:#f3e9da;--soft:#a8977f;--line:#33291e;--acc:#f0a23a;--acc2:#ffb95c}}
+:root{--bg:#fbf5ea;--bg2:#f4e9d6;--card:#fffdf8;--ink:#2a1a0e;--soft:#7c6a55;--line:#ebdcc4;--acc:#ec8a0b;--acc2:#b9620a;--leaf:#2f6b4f;--sh:0 1px 0 rgba(80,50,10,.04),0 8px 24px -12px rgba(80,50,10,.18);
+--disp:"Fraunces",Georgia,serif;--body:"Manrope",system-ui,-apple-system,"Segoe UI","Noto Sans","Noto Sans Devanagari","Noto Sans Kannada","Noto Sans Tamil",sans-serif}
+@media (prefers-color-scheme:dark){:root{--bg:#16110c;--bg2:#1e1710;--card:#211911;--ink:#f5ead9;--soft:#ad9a80;--line:#33281c;--acc:#f3a03b;--acc2:#ffbd66;--leaf:#7cc4a0;--sh:0 8px 24px -12px rgba(0,0,0,.6)}}
 *{box-sizing:border-box;margin:0}
-body{background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;padding:28px 16px 96px}
-main{max-width:560px;margin:0 auto}
-.mark{display:flex;align-items:center;gap:10px;color:var(--soft);font-size:14px;letter-spacing:.04em;text-transform:lowercase}
-.mark i{width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 40% 40%,#ffc24d,var(--acc) 60%,var(--acc2));display:inline-block}
-h1{font-size:30px;line-height:1.15;margin:22px 0 4px;letter-spacing:-.01em}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--body);padding:22px 16px 110px;-webkit-font-smoothing:antialiased}
+main{max-width:600px;margin:0 auto}
+a{color:inherit}
+.mark{display:inline-flex;align-items:center;gap:9px;color:var(--ink);font:600 19px/1 var(--disp);letter-spacing:-.01em;text-decoration:none}
+.mark i{width:24px;height:24px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffd36b,var(--acc) 55%,var(--acc2));box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 18%,transparent);display:inline-block}
+h1{font:650 clamp(30px,7vw,40px)/1.08 var(--disp);letter-spacing:-.02em;margin:26px 0 6px}
 .sub{color:var(--soft);font-size:15px}
 .list{margin-top:22px;display:grid;gap:10px}
-.row{display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;color:inherit;text-decoration:none}
-.row b{font-weight:600}.row small{display:block;color:var(--soft);font-size:13px;margin-top:2px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:12px 14px;color:inherit;text-decoration:none;box-shadow:var(--sh);transition:transform .25s,border-color .25s}
+a.row:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--acc) 45%,var(--line))}
+.row b{font-weight:650}.row small{display:block;color:var(--soft);font-size:13px;margin-top:1px}
+.lft{display:flex;align-items:center;gap:12px;min-width:0}
+.av{width:44px;height:44px;border-radius:14px;flex:none;display:grid;place-items:center;font:600 19px/1 var(--disp);color:#3a2208;background:hsl(var(--hu,32) 85% 80%)}
+@media (prefers-color-scheme:dark){.av{background:hsl(var(--hu,32) 45% 30%);color:#fbe7c8}}
 .price{font-weight:700;color:var(--acc2);white-space:nowrap}
-.go{position:fixed;left:16px;right:16px;bottom:18px;max-width:560px;margin:0 auto;display:block;text-align:center;background:var(--acc);color:#1d1206;font-weight:700;padding:15px;border-radius:14px;text-decoration:none;box-shadow:0 6px 20px rgba(0,0,0,.15)}
+.go{position:fixed;left:16px;right:16px;bottom:16px;max-width:600px;margin:0 auto;display:flex;justify-content:center;align-items:center;gap:10px;text-align:center;background:var(--ink);color:var(--bg);font-weight:700;padding:16px;border-radius:18px;text-decoration:none;box-shadow:0 12px 30px -10px rgba(40,20,0,.5);z-index:5}
+.go em{font-style:normal;background:var(--acc);color:#1d1206;border-radius:999px;padding:2px 10px;font-size:14px}
 .empty{color:var(--soft);margin-top:30px}
 .alt{display:block;text-align:center;color:var(--soft);font-size:14px;margin-top:18px}
-.langs{display:flex;gap:4px;justify-content:flex-end;margin-top:-22px}
-.langs button{font:inherit;font-size:13px;background:none;border:0;color:var(--soft);padding:4px 6px;cursor:pointer;border-radius:8px}
-.langs button.on{color:var(--ink);background:var(--card);border:1px solid var(--line)}
+.langs{display:flex;gap:2px;justify-content:flex-end}
+.langs button{font:inherit;font-size:13px;background:none;border:1px solid transparent;color:var(--soft);padding:4px 8px;cursor:pointer;border-radius:999px}
+.langs button.on{color:var(--ink);background:var(--card);border-color:var(--line)}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 14px;font-size:14px;font-weight:600;text-decoration:none;color:var(--ink)}
+.rise{animation:rise .7s cubic-bezier(.2,.8,.2,1) both}.d1{animation-delay:.06s}.d2{animation-delay:.12s}.d3{animation-delay:.18s}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}}
+@media (prefers-reduced-motion:reduce){.rise{animation:none}}
 `;
 
 const FORM_CSS = `
@@ -1232,12 +1228,21 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--acc);border-colo
 `;
 
 const SHOP_CSS = FORM_CSS + `
-.rt{text-align:right}
-.qty{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:6px}
+.shead{display:flex;align-items:center;gap:16px;margin-top:22px}
+.shead h1{margin:0 0 2px}
+.av.big{width:64px;height:64px;border-radius:20px;font-size:30px}
+.search{margin-top:20px;border-radius:999px!important;padding:12px 18px!important}
+
+.rt{display:flex;align-items:center;gap:12px;flex-shrink:0}
+.price{text-align:right;line-height:1.15}.price small{display:block;font-size:12px}
+.qty{display:flex;align-items:center;gap:6px}
 .q{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:18px;font-weight:700;cursor:pointer}
 .q.p{background:var(--acc);border-color:var(--acc);color:#1d1206}
 .n{min-width:18px;text-align:center}
 .row:not(.has) .m,.row:not(.has) .n{display:none}
+.rcpt{gap:0!important;background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--sh);overflow:hidden}
+.rcpt .row{border:0;border-radius:0;box-shadow:none;background:none;border-top:1px dashed var(--line)}
+.rcpt .row:first-child{border-top:0}
 .seg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px}
 .seg button{font:inherit;font-weight:600;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;cursor:pointer}
 .seg button.on{border:2px solid var(--acc)}
@@ -1256,7 +1261,7 @@ const SHOP_CSS = FORM_CSS + `
 
 function pageHtml(title, body, o = {}) {
   return new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${h(title)}</title><style>${PAGE_CSS}${o.css || ""}</style></head><body><main>${body}</main></body></html>`,
+<title>${h(title)}</title><meta name="theme-color" content="#fbf5ea">${o.desc ? `<meta name="description" content="${h(o.desc)}"><meta property="og:title" content="${h(title)}"><meta property="og:description" content="${h(o.desc)}">` : ""}${FONTS}<style>${PAGE_CSS}${o.css || ""}</style></head><body><main>${body}</main></body></html>`,
     { status: o.status || 200, headers: { "content-type": "text/html; charset=utf-8", "cache-control": o.cache || "public, max-age=30" } });
 }
 
@@ -1276,25 +1281,19 @@ async function webPage(env, sid) {
   const c = { env, st: new Store(env.DB) };
   c.bot = await botName(c);
   const mark = `<a class="mark" href="/" style="text-decoration:none"><i></i>munshi</a>`;
-  if (!sid) {
-    const shops = await allShops(c);
-    const rows = shops.map(([id, sh]) => `<a class="row" href="/s/${encodeURIComponent(id)}"><span><b>${h(sh.shopName)}</b><small>${h(sh.area || "")}</small></span><span class="sub">${(sh.items || []).length} items →</span></a>`).join("");
-    return pageHtml("Munshi", `${mark}<h1>Shops on Munshi</h1><p class="sub">Speak your shop into existence.</p>
-<div class="list">${rows || `<p class="empty">No shops yet.</p>`}</div>
-<a class="go" href="https://t.me/${c.bot}">Open your shop on Telegram</a>`);
-  }
+  if (!sid) return homePage(c, mark);
   const sh = await getShop(c, sid);
   if (!sh) return pageHtml("Not found", `${mark}<h1>Shop not found</h1><p class="sub"><a href="/">All shops</a></p>`, { status: 404 });
   const items = sh.items || [];
-  const rows = items.map((it, i) => `<div class="row" data-i="${i}"><span><b>${h(it.name)}</b>${it.local && it.local !== it.name ? `<small>${h(it.local)}</small>` : ""}</span><span class="rt"><span class="price">${rs(it.price)}${it.unit ? `<small style="font-weight:400;color:var(--soft)">/ ${h(it.unit)}</small>` : ""}</span><span class="qty"><button class="q m" aria-label="one less">−</button><b class="n">0</b><button class="q p" aria-label="one more">+</button></span></span></div>`).join("");
+  const rows = items.map((it, i) => `<div class="row" data-i="${i}"><span class="lft">${avatar(it.name)}<span><b>${h(it.name)}</b>${it.local && it.local !== it.name ? `<small>${h(it.local)}</small>` : ""}</span></span><span class="rt"><span class="price">${rs(it.price)}${it.unit ? `<small style="font-weight:400;color:var(--soft)">/ ${h(it.unit)}</small>` : ""}</span><span class="qty"><button class="q m" aria-label="one less">−</button><b class="n">0</b><button class="q p" aria-label="one more">+</button></span></span></div>`).join("");
   const tel = sh.phone ? ` · <a href="tel:${h(sh.phone)}" style="color:inherit">📞 ${h(sh.phone)}</a>` : "";
-  return pageHtml(sh.shopName, `${mark}<div class="langs">${[["en", "EN"], ...LANGS.filter(l => l[0] !== "en")].map(([k, l]) => `<button data-l="${k}">${l}</button>`).join("")}</div>
-<section id="shop"><h1>${h(sh.shopName)}</h1><p class="sub">${h(sh.area || "")}${tel}</p>
+  return pageHtml(sh.shopName, `<div class="top">${mark}<div class="langs">${[["en", "EN"], ...LANGS.filter(l => l[0] !== "en")].map(([k, l]) => `<button data-l="${k}">${l}</button>`).join("")}</div></div>
+<section id="shop"><div class="shead rise" style="--hu:${hue(sh.shopName)}"><span class="av big">${h(initial(sh.shopName))}</span><div><h1>${h(sh.shopName)}</h1><p class="sub">${h(sh.area || "")}${tel}</p></div></div>
+${items.length > 8 ? `<input class="search" id="find" placeholder="Search ${items.length} items" autocomplete="off">` : ""}
 <div class="list">${rows || `<p class="empty">Menu coming soon.</p>`}</div>
-<a class="alt" href="${shopLink(c, sid)}">or order on Telegram →</a>
 <a class="alt" href="${h(waShare(sh, sid))}" target="_blank" rel="noopener">share on WhatsApp</a></section>
-<section id="co" hidden><a class="alt" href="#" id="back" style="text-align:left;margin:0">← <span data-t="backToShop">back</span></a><h1 data-t="checkout">Your order</h1>
-<div class="list" id="lines"></div>
+<section id="co" hidden><a class="alt" href="#" id="back" style="text-align:left;margin:18px 0 0">← <span data-t="backToShop">back</span></a><h1 data-t="checkout">Your order</h1>
+<div class="list rcpt" id="lines"></div>
 <div class="seg"><button type="button" data-m="delivery" class="on">🛵 <span data-t="delivery">Delivery</span></button><button type="button" data-m="pickup">🏃 <span data-t="pickup">Pickup</span></button></div>
 ${sh.upi ? `<div class="seg" id="pay"><button type="button" data-p="upi">Pay now by UPI</button><button type="button" data-p="cod" class="on" id="cod">Cash on delivery</button></div>` : ""}
 <div class="f"><label data-t="name">name</label><input id="bn" maxlength="60" autocomplete="name">
@@ -1340,13 +1339,13 @@ function paint() {
   document.querySelectorAll(".row[data-i]").forEach(r => { const q = (cart[r.dataset.i] || {}).q || 0; r.classList.toggle("has", q > 0); r.querySelector(".n").textContent = q; });
   const n = count(), co = inCo();
   $("shop").hidden = co; $("co").hidden = !co; $("bar").hidden = !n;
-  if (!co) { $("bar").textContent = n + " " + T("items", n > 1 ? "items" : "item") + " · " + rs(sub()) + "  →"; return; }
+  if (!co) { $("bar").innerHTML = "<em>" + n + "</em>" + T("items", n > 1 ? "items" : "item") + " · " + rs(sub()) + " →"; return; }
   $("bar").textContent = busy ? "…" : T("placeOrder", "Place order") + " · " + rs(quote ? quote.total : sub());
   $("lines").innerHTML = "";
   for (const [i, x] of Object.entries(cart)) {
     const d = document.createElement("div"); d.className = "row";
     d.innerHTML = "<span></span><span class=price></span>";
-    d.firstChild.textContent = x.q + " × " + ITEMS[i].l; d.lastChild.textContent = rs(ITEMS[i].p * x.q);
+    d.firstChild.textContent = x.q + " × " + (lang === "en" ? ITEMS[i].n : ITEMS[i].l); d.lastChild.textContent = rs(ITEMS[i].p * x.q);
     $("lines").appendChild(d);
   }
   $("dl").hidden = mode !== "delivery";
@@ -1392,7 +1391,8 @@ $("gl").onclick = () => {
 };
 setLang(lang);
 if (inCo()) requote();
-</script>`, { css: SHOP_CSS });
+if ($("find")) $("find").oninput = e => { const q = e.target.value.trim().toLowerCase(); document.querySelectorAll(".row[data-i]").forEach(r => { r.hidden = q && !r.textContent.toLowerCase().includes(q); }); };
+</script>`, { css: SHOP_CSS, desc: `${sh.shopName}${sh.area ? " · " + sh.area : ""}: see the menu and order online.` });
 }
 
 async function statusRoute(env, url) {
@@ -1587,7 +1587,13 @@ function managePage(sid, shop) {
 .top{display:flex;justify-content:space-between;align-items:center}
 .top a{color:var(--soft);font-size:14px}
 .tp{display:grid;grid-template-columns:1fr 110px;gap:6px}
-h2{font-size:20px;margin:26px 0 0}
+h2{font:650 24px var(--disp);letter-spacing:-.01em;margin:34px 0 4px}
+details.set{margin-top:34px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:4px 16px 14px}
+details.set summary{cursor:pointer;font:600 17px var(--disp);padding:12px 0 6px;list-style:none}
+details.set summary::-webkit-details-marker{display:none}
+details.set summary:after{content:"＋";float:right;color:var(--soft)}
+details.set[open] summary:after{content:"−"}
+.oc,.it,.share{box-shadow:var(--sh);border-radius:18px}
 .share{display:flex;gap:14px;align-items:center;margin-top:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
 .share svg{width:120px;height:120px;flex:none;border-radius:6px}
 .sb{display:grid;gap:8px;flex:1;min-width:0}.sb small{color:var(--soft);font-size:12px;word-break:break-all}
@@ -1601,21 +1607,22 @@ h2{font-size:20px;margin:26px 0 0}
 `;
   const data = JSON.stringify(shopView(shop)).replace(/</g, "\\u003c");
   return new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${h(shop.shopName)} · manage</title><style>${css}</style></head><body><main>
-<div class="top"><span class="mark"><i></i>munshi</span><a href="/s/${encodeURIComponent(sid)}" target="_blank">public page ↗</a></div>
-<div class="f"><label>shop name</label><input id="n"><label>area</label><input id="a"><label>phone</label><input id="p" inputmode="tel"><label>UPI ID (optional, for online payment)</label><input id="u" placeholder="name@bank" autocapitalize="off"></div>
+<meta name="theme-color" content="#fbf5ea"><title>${h(shop.shopName)} · manage</title>${FONTS}<style>${css}</style></head><body><main>
+<div class="top"><span class="mark"><i></i>munshi</span><a href="/s/${encodeURIComponent(sid)}" target="_blank">view ↗</a></div>
+<div class="shead rise" style="display:flex;align-items:center;gap:14px;margin-top:22px"><span class="av" style="--hu:${hue(shop.shopName)};width:56px;height:56px;border-radius:18px;font-size:26px">${h(initial(shop.shopName))}</span><div><h1 style="margin:0">${h(shop.shopName)}</h1><p class="sub" id="cash" style="margin:0"></p></div></div>
 <div class="say" id="say"></div>
-<h2>Share your shop</h2>
-<div class="share">${qrSvg(webLink(shop, sid))}<div class="sb">
-<a class="sh wa" href="${h(waShare(shop, sid))}" target="_blank" rel="noopener">WhatsApp</a>
-<a class="sh" href="https://t.me/share/url?url=${encodeURIComponent(webLink(shop, sid))}&amp;text=${encodeURIComponent(shop.shopName)}" target="_blank" rel="noopener">Telegram</a>
-<button class="sh" id="copy" data-link="${h(webLink(shop, sid))}">Copy link</button><small>${h(webLink(shop, sid))}</small></div></div>
-<h2>Orders</h2><p class="sub" id="cash"></p>
+<h2>Orders</h2>
 <div class="list" id="orders"></div>
 <h2>Items</h2>
 <div class="list" id="items"></div>
 <div class="list"><button class="add" id="addb">+ add item</button>
-<div class="tp"><select id="tc"><option value="">📋 start from a template</option>${Object.entries(TEMPLATES).map(([k, t]) => `<option value="${h(k)}">${h(t.label.en)}</option>`).join("")}</select><select id="tl">${LANGS.map(([k, l]) => `<option value="${k}">${l}</option>`).join("")}</select></div></div>
+<div class="tp"><select id="tc"><option value="">📋 template</option>${Object.entries(TEMPLATES).map(([k, t]) => `<option value="${h(k)}">${h(t.label.en)}</option>`).join("")}</select><select id="tl">${LANGS.map(([k, l]) => `<option value="${k}">${l}</option>`).join("")}</select></div></div>
+<h2>Share</h2>
+<div class="share">${qrSvg(webLink(shop, sid))}<div class="sb">
+<a class="sh wa" href="${h(waShare(shop, sid))}" target="_blank" rel="noopener">WhatsApp</a>
+<a class="sh" href="https://t.me/share/url?url=${encodeURIComponent(webLink(shop, sid))}&amp;text=${encodeURIComponent(shop.shopName)}" target="_blank" rel="noopener">Telegram</a>
+<button class="sh" id="copy" data-link="${h(webLink(shop, sid))}">Copy link</button></div></div>
+<details class="set"><summary>Shop details</summary><div class="f"><label>shop name</label><input id="n"><label>area</label><input id="a"><label>phone</label><input id="p" inputmode="tel"><label>UPI ID</label><input id="u" placeholder="name@bank" autocapitalize="off"></div></details>
 <div style="height:90px"></div>
 </main>
 <div class="bar"><div><button class="mic" id="mic" title="Tap and speak">🎙</button><button class="save" id="save">Save</button></div></div>
@@ -1656,7 +1663,7 @@ const ACT = { accept: "Accept", decline: "Decline", out: "Out for delivery", com
 const money = n => "₹" + Number(n).toLocaleString("en-IN", { maximumFractionDigits: 2 });
 function orders(r) {
   if (r.error) show(esc(r.error));
-  $("cash").textContent = "cash collected today " + money(r.cash || 0);
+  $("cash").textContent = "today " + money(r.cash || 0);
   const box = $("orders"); box.innerHTML = "";
   if (!r.orders || !r.orders.length) { box.innerHTML = '<p class="sub">No orders yet.</p>'; return; }
   for (const o of r.orders) {
@@ -1706,4 +1713,92 @@ $("mic").onclick = async () => {
 };
 render();
 </script></body></html>`, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
+}
+
+// ---------- homepage ----------
+
+function hue(s) { let x = 0; for (const ch of String(s)) x = (x * 31 + ch.codePointAt(0)) % 360; return x; }
+function initial(s) { return ([...String(s).trim()][0] || "•").toUpperCase(); }
+function avatar(name) { return `<span class="av" style="--hu:${hue(name)}">${h(initial(name))}</span>`; }
+
+const HOME_CSS = `
+body{padding-top:18px}
+main{max-width:1040px}
+.hero{display:grid;gap:34px;align-items:center;margin-top:34px}
+@media (min-width:860px){.hero{grid-template-columns:1.1fr .9fr;margin-top:56px}}
+.kick{display:inline-flex;gap:8px;align-items:center;font-size:13px;font-weight:600;color:var(--leaf);background:color-mix(in srgb,var(--leaf) 10%,transparent);border-radius:999px;padding:6px 12px}
+.hero h1{font-size:clamp(42px,8.5vw,72px);line-height:.98;margin:18px 0 16px}
+.hero h1 em{font-style:italic;color:var(--acc2)}
+.lead{font-size:18px;color:var(--soft);max-width:30em}
+.ctas{display:flex;gap:10px;flex-wrap:wrap;margin-top:26px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:15px 22px;border-radius:16px;font-weight:700;text-decoration:none;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+.btn.main{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn:hover{transform:translateY(-1px)}
+.say{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.say span{font-size:14px;border:1px dashed var(--line);border-radius:999px;padding:6px 12px;color:var(--soft)}
+.phone{position:relative;justify-self:center;width:min(100%,360px);background:var(--card);border:1px solid var(--line);border-radius:34px;padding:18px 16px 20px;box-shadow:0 30px 60px -30px rgba(80,40,0,.45)}
+.phone:before{content:"";position:absolute;inset:-14px -14px auto auto;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--acc) 35%,transparent),transparent 70%);z-index:-1}
+.bub{max-width:85%;padding:10px 14px;border-radius:18px;font-size:14px;margin-top:10px}
+.bub.me{margin-left:auto;background:#dff3dc;color:#183b1a;border-bottom-right-radius:6px}
+@media (prefers-color-scheme:dark){.bub.me{background:#23452a;color:#dff3dc}}
+.bub.bot{background:var(--bg2);border-bottom-left-radius:6px}
+.wave{display:flex;align-items:center;gap:3px;height:22px}
+.wave i{width:3px;border-radius:2px;background:currentColor;opacity:.7;animation:w 1.1s ease-in-out infinite}
+.wave i:nth-child(2n){animation-delay:.15s}.wave i:nth-child(3n){animation-delay:.3s}
+@keyframes w{0%,100%{height:6px}50%{height:20px}}
+.mini{margin-top:12px;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.mini div{display:flex;justify-content:space-between;padding:9px 12px;font-size:14px;border-top:1px solid var(--line)}
+.mini div:first-child{border-top:0;font:600 15px var(--disp);background:var(--bg2)}
+.mini b{color:var(--acc2)}
+h2{font:650 clamp(26px,5vw,34px)/1.1 var(--disp);letter-spacing:-.015em;margin:80px 0 22px}
+.steps3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:70px}
+.step{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:22px;box-shadow:var(--sh)}
+.step .ic{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-size:22px;background:var(--bg2)}
+.step h3{font:600 20px var(--disp);margin:14px 0 0}
+.step p{color:var(--soft);font-size:15px}
+.feats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media (min-width:760px){.feats{grid-template-columns:repeat(4,1fr)}}
+.feat{border-top:2px solid var(--acc);padding-top:12px}
+.feat b{display:block;font:600 17px var(--disp)}
+.feat span{color:var(--soft);font-size:14px}
+.shops{display:grid;gap:10px}
+@media (min-width:760px){.shops{grid-template-columns:repeat(2,1fr)}}
+.band{margin-top:80px;background:var(--ink);color:var(--bg);border-radius:28px;padding:34px 26px;display:grid;gap:16px;align-items:center}
+@media (min-width:760px){.band{grid-template-columns:1fr auto;padding:40px}}
+.band h2{margin:0;color:var(--bg)}
+.band .btn{background:var(--acc);color:#1d1206;border-color:var(--acc)}
+footer{margin-top:40px;color:var(--soft);font-size:13px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+`;
+
+async function homePage(c, mark) {
+  const shops = await allShops(c);
+  const tg = `https://t.me/${c.bot}`;
+  const cards = shops.map(([id, sh]) => `<a class="row" href="/s/${encodeURIComponent(id)}"><span class="lft">${avatar(sh.shopName)}<span><b>${h(sh.shopName)}</b><small>${h(sh.area || "")}</small></span></span><span class="sub">${(sh.items || []).length} items →</span></a>`).join("");
+  const body = `<div class="top">${mark}<a class="pill" href="${tg}">Start</a></div>
+<section class="hero">
+  <div>
+    <span class="kick rise">● ಕನ್ನಡ · हिंदी · தமிழ் · English</span>
+    <h1 class="rise d1">Speak your shop <em>online.</em></h1>
+    <p class="lead rise d2">One voice note. Your menu, a link, orders.</p>
+    <div class="ctas rise d3"><a class="btn main" href="${tg}">🎙 Start</a>${shops.length ? `<a class="btn" href="/s/${encodeURIComponent(shops[0][0])}">See a shop</a>` : ""}</div>
+  </div>
+  <div class="phone rise d2" aria-hidden="true">
+    <div class="bub me"><div class="wave">${"<i></i>".repeat(18)}</div></div>
+    <div class="bub bot">Shop is live ✓</div>
+    <div class="mini"><div>Tea Corner</div><div>Cutting chai <b>₹10</b></div><div>Masala chai <b>₹15</b></div><div>Samosa <b>₹20</b></div></div>
+    <div class="bub bot">🛵 New order · ₹40</div>
+  </div>
+</section>
+
+<div class="steps3">
+  <div class="step"><div class="ic">🎙</div><h3>Speak</h3></div>
+  <div class="step"><div class="ic">🔗</div><h3>Share</h3></div>
+  <div class="step"><div class="ic">🛵</div><h3>Sell</h3></div>
+</div>
+
+${shops.length ? `<h2>Shops</h2><div class="shops">${cards}</div>` : ""}
+
+<div class="band"><h2>Open in two minutes.</h2><a class="btn" href="${tg}">🎙 Start</a></div>
+<footer><span>munshi</span><span>ಕನ್ನಡ · हिंदी · தமிழ் · English</span></footer>`;
+  return pageHtml("Munshi · speak your shop online", body, { css: HOME_CSS, desc: "Send a voice note with your items and prices. Munshi builds your menu, gives you a link to share, and brings you orders." });
 }

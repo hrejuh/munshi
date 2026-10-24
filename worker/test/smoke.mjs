@@ -65,18 +65,18 @@ const cb = (chat, data) => ({ callback_query: { id: "q", data, message: { messag
 const sent = () => calls.filter(c => c.url.endsWith("/sendMessage")).map(c => c.body.text);
 
 // routes
-assert.equal((await (await worker.fetch(new Request("https://x.dev/"), env, {})).text()).includes("Shops on Munshi"), true);
+assert.equal((await (await worker.fetch(new Request("https://x.dev/"), env, {})).text()).includes("Speak your shop"), true);
 assert.equal((await post(msg(OWNER, { text: "/start" }), "wrong")).status, 403);
 
 // onboarding by text
 await post(msg(OWNER, { text: "/start" }));
 assert.match(sent().at(-1), /What's your shop called/);
 await post(msg(OWNER, { text: "Ravi Stores" }));
-assert.match(sent().at(-1), /Ravi Stores.*Which area/s);
+assert.match(sent().at(-1), /Ravi Stores.*Area/s);
 await post(msg(OWNER, { text: "Jayanagar" }));
 await post(msg(OWNER, { contact: { phone_number: "+91 98765 43210" } }));
 await post(msg(OWNER, { location: { latitude: 12.93, longitude: 77.58 } }));
-assert.match(sent().at(-1), /what do you sell/);
+assert.match(sent().at(-1), /What do you sell/);
 
 // items by voice -> transcript, text reply, then a voice reply
 const before = calls.length;
@@ -107,11 +107,11 @@ assert.equal(shop.items.length, 39);
 assert.ok(shop.items[2].local && /[\u0C80-\u0CFF]/.test(shop.items[2].local), "kannada local names");
 assert.equal(shop.page, "https://telegra.ph/Ravi-Stores-10-24");
 assert.deepEqual(JSON.parse(kv.get("index:shops")), [sid]);
-assert.ok(sent().some(t => /Ravi Stores is open/.test(t)));
+assert.ok(sent().some(t => /Ravi Stores<\/b> is live/.test(t)));
 
-assert.ok(sent().some(t => /Manage your shop on the web.*\/m\//s.test(t)), "manage link after onboarding");
+const btns = () => calls.flatMap(c => (c.body && c.body.reply_markup && c.body.reply_markup.inline_keyboard || []).flat());
 await post(msg(OWNER, { text: "/web" }));
-assert.match(sent().at(-1), new RegExp(`Manage your shop on the web:\\n\\S+/m/${sid}\\?k=[0-9a-f]{24}`));
+assert.match(calls.findLast(c => c.url.endsWith("/sendMessage")).body.reply_markup.inline_keyboard[0][0].web_app.url, new RegExp(`/m/${sid}\\?k=[0-9a-f]{24}`));
 
 await worker.fetch(new Request("https://x.dev/setup?key=s3cret"), env, {});
 assert.ok(calls.findLast(c => c.url.endsWith("/setMyCommands")).body.commands.some(c => c.command === "web"), "/web in the menu");
@@ -124,6 +124,7 @@ assert.equal(JSON.parse(kv.get(`shop:${sid}`)).items[0].price, 12);
 
 // buyer: open shop, tap, chat, delivery, location, address, phone
 await post(msg(BUYER, { text: `/start s_${sid}` }));
+assert.ok(btns().at(-1).web_app.url.endsWith(`/s/${sid}`), "buyer gets the web menu");
 await post(cb(BUYER, `a:${sid}:0`));
 await post(msg(BUYER, { text: "do samose bhi" }));
 assert.equal(sent().at(-1), "How do you want it?");
@@ -143,11 +144,11 @@ const kb = () => calls.filter(c => c.url.endsWith("/editMessageReplyMarkup")).at
 assert.ok(kb().includes(`out:${oid}`), "out for delivery button after accept");
 
 // owner web dashboard: link comes from the Telegram dashboard button
-const mlink = calls.flatMap(c => (c.body && c.body.reply_markup && c.body.reply_markup.inline_keyboard || []).flat()).map(b => b.url).find(u => u && u.includes("/m/"));
+const mlink = btns().map(b => b.web_app && b.web_app.url).find(u => u && u.includes("/m/"));
 const mq = new URL(mlink).search;
 const W = (path, init) => worker.fetch(new Request("https://x.dev" + path, init), env, { waitUntil: () => {} });
 assert.equal((await W(`/m/${sid}?k=bad`)).status, 403);
-assert.match(await (await W(`/m/${sid}${mq}`)).text(), /start from a template/);
+assert.match(await (await W(`/m/${sid}${mq}`)).text(), /📋 template/);
 const tplRes = await (await W(`/api/m/${sid}/template/kirana${mq}&lang=hi&have=10`)).json();
 assert.equal(tplRes.items.length, 50);
 assert.ok(tplRes.items.every(i => i.name && i.price > 0) && /[\u0900-\u097F]/.test(tplRes.items[0].local));
@@ -159,7 +160,7 @@ assert.match(sent().at(-1), /Today: <b>1<\/b> orders/);
 // public shop page: cart + checkout script that at least parses
 const page = await (await W(`/s/${sid}`)).text();
 assert.match(page, /data-i="0"/);
-assert.match(page, /or order on Telegram/);
+assert.match(page, /share on WhatsApp/);
 assert.ok(page.includes('data-l="kn"') && page.includes("ಆರ್ಡರ್ ಮಾಡಿ") && page.includes('data-t="deliveryAddress"'), "language toggle");
 for (const m of page.matchAll(/<script>([\s\S]*?)<\/script>/g)) new Function(m[1]);
 
