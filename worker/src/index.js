@@ -3,6 +3,7 @@
 // KV binding: DB. Keys: shop:<sid>, order:<oid>, sess:<chat>, owner:<chat> -> sid, index:shops, index:orders, upd:<update_id>.
 
 import { TEMPLATES } from "./templates.js";
+import { qrSvg } from "./qr.js";
 
 const ADMIN = 1238521561;
 const IST_MS = 5.5 * 3600 * 1000;
@@ -182,6 +183,8 @@ const shopLink = (c, sid) => `https://t.me/${c.bot}?start=s_${sid}`;
 const PUBLIC_URL = "https://munshi.hrejuh.workers.dev";
 const webLink = (shop, sid) => (shop && sid) ? `${PUBLIC_URL}/s/${sid}` : "";
 const iname = it => it.local || it.name;
+const shareText = (shop, sid) => `🏪 ${shop.shopName}${shop.area ? " · " + shop.area : ""}\nOrder online, pay cash on delivery:\n${webLink(shop, sid)}`;
+const waShare = (shop, sid) => "https://wa.me/?text=" + encodeURIComponent(shareText(shop, sid));
 const now = () => Date.now() / 1000;
 const pad = n => String(n).padStart(2, "0");
 const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -1247,7 +1250,8 @@ async function webPage(env, sid) {
   const tel = sh.phone ? ` · <a href="tel:${h(sh.phone)}" style="color:inherit">📞 ${h(sh.phone)}</a>` : "";
   return pageHtml(sh.shopName, `${mark}<section id="shop"><h1>${h(sh.shopName)}</h1><p class="sub">${h(sh.area || "")}${tel}</p>
 <div class="list">${rows || `<p class="empty">Menu coming soon.</p>`}</div>
-<a class="alt" href="${shopLink(c, sid)}">or order on Telegram →</a></section>
+<a class="alt" href="${shopLink(c, sid)}">or order on Telegram →</a>
+<a class="alt" href="${h(waShare(sh, sid))}" target="_blank" rel="noopener">share on WhatsApp</a></section>
 <section id="co" hidden><a class="alt" href="#" id="back" style="text-align:left;margin:0">← back</a><h1>Your order</h1>
 <div class="list" id="lines"></div>
 <div class="seg"><button type="button" data-m="delivery" class="on">🛵 Delivery</button><button type="button" data-m="pickup">🏃 Pickup</button></div>
@@ -1503,6 +1507,11 @@ function managePage(sid, shop) {
 .top a{color:var(--soft);font-size:14px}
 .tp{display:grid;grid-template-columns:1fr 110px;gap:6px}
 h2{font-size:20px;margin:26px 0 0}
+.share{display:flex;gap:14px;align-items:center;margin-top:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
+.share svg{width:120px;height:120px;flex:none;border-radius:6px}
+.sb{display:grid;gap:8px;flex:1;min-width:0}.sb small{color:var(--soft);font-size:12px;word-break:break-all}
+.sh{display:block;text-align:center;font:inherit;font-size:14px;font-weight:600;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:8px;text-decoration:none;cursor:pointer}
+.sh.wa{background:var(--acc);border-color:var(--acc);color:#1d1206}
 .oc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:15px}
 .oc .hd{display:flex;justify-content:space-between;gap:8px}.oc small{display:block;color:var(--soft);font-size:13px;margin-top:3px}
 .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
@@ -1515,6 +1524,11 @@ h2{font-size:20px;margin:26px 0 0}
 <div class="top"><span class="mark"><i></i>munshi</span><a href="/s/${encodeURIComponent(sid)}" target="_blank">public page ↗</a></div>
 <div class="f"><label>shop name</label><input id="n"><label>area</label><input id="a"><label>phone</label><input id="p" inputmode="tel"></div>
 <div class="say" id="say"></div>
+<h2>Share your shop</h2>
+<div class="share">${qrSvg(webLink(shop, sid))}<div class="sb">
+<a class="sh wa" href="${h(waShare(shop, sid))}" target="_blank" rel="noopener">WhatsApp</a>
+<a class="sh" href="https://t.me/share/url?url=${encodeURIComponent(webLink(shop, sid))}&amp;text=${encodeURIComponent(shop.shopName)}" target="_blank" rel="noopener">Telegram</a>
+<button class="sh" id="copy" data-link="${h(webLink(shop, sid))}">Copy link</button><small>${h(webLink(shop, sid))}</small></div></div>
 <h2>Orders</h2><p class="sub" id="cash"></p>
 <div class="list" id="orders"></div>
 <h2>Items</h2>
@@ -1580,6 +1594,7 @@ function orders(r) {
     box.appendChild(d);
   }
 }
+$("copy").onclick = async () => { try { await navigator.clipboard.writeText($("copy").dataset.link); $("copy").textContent = "Copied ✓"; } catch { prompt("Copy this link", $("copy").dataset.link); } };
 const loadOrders = async () => { try { orders(await (await fetch(OAPI)).json()); } catch {} };
 loadOrders(); setInterval(loadOrders, 20000);
 function show(html) { const b = $("say"); b.innerHTML = html; b.style.display = "block"; }

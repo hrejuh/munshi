@@ -2,6 +2,7 @@
 // Run: node test/smoke.mjs   (no network, no real keys)
 import assert from "node:assert/strict";
 import worker from "../src/index.js";
+import { qrMatrix } from "../src/qr.js";
 
 const kv = new Map();
 const DB = {
@@ -214,9 +215,18 @@ assert.match(sent().at(-1), /complete/);
 await post(cb(BUYER, `ok:${placed.oid}`));
 assert.equal(JSON.parse(kv.get(`order:${placed.oid}`)).status, "new", "only the owner can accept");
 
-// owner web dashboard: orders, valid transitions only, cash collected
 const mp = await (await W(`/m/${sid}${mq}`)).text();
 for (const m of mp.matchAll(/<script>([\s\S]*?)<\/script>/g)) new Function(m[1]);
+// sharing: WhatsApp / Telegram / copy / QR on the dashboard, WhatsApp on the public page
+assert.ok(mp.includes("https://wa.me/?text=") && mp.includes(encodeURIComponent(`/s/${sid}`)));
+assert.match(mp, /t\.me\/share\/url\?url=/);
+assert.match(mp, /id="copy"/);
+assert.match(mp, /<svg[^>]*aria-label="QR code"[\s\S]*?<path d="M/);
+assert.ok(page.includes("https://wa.me/?text="), "share on the public page");
+assert.equal(qrMatrix("https://munshi.hrejuh.workers.dev/s/" + sid).length, 33, "version 4");
+assert.equal(qrMatrix("x".repeat(300)), null, "too long for v10");
+
+// owner web dashboard: orders, valid transitions only, cash collected
 const OA = (o, action) => W(`/api/m/${sid}/orders/${o}${mq}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action }) });
 assert.equal((await W(`/api/m/${sid}/orders?k=bad`)).status, 403);
 let ov = await (await W(`/api/m/${sid}/orders${mq}`)).json();
