@@ -1,0 +1,6 @@
+.env
+shops.json
+*.log
+*.ogg
+*.mp3
+__pycache__/
