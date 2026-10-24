@@ -10,7 +10,8 @@ const IST_MS = 5.5 * 3600 * 1000;
 const VOICE_ID = "cgSgspJ2msm6clMCkdW9";
 const COMMANDS = [
   { command: "shop", description: "My shop" }, { command: "sales", description: "Sales" },
-  { command: "orders", description: "Orders" }, { command: "new", description: "Start a new shop" },
+  { command: "orders", description: "Orders" }, { command: "web", description: "Manage on the web" },
+  { command: "new", description: "Start a new shop" },
 ];
 let BOT_NAME = null;
 
@@ -544,7 +545,7 @@ async function finishOnboarding(c, chat) {
   await publishPage(c, sid);
   console.log(`SHOP ${sid} ${d.shopName} items=${d.items.length}`);
   const link = shopLink(c, sid);
-  await send(c, chat, `🎉 <b>${h(d.shopName)} is open</b>\n\nSend this to customers:\n${link}`,
+  await send(c, chat, `🎉 <b>${h(d.shopName)} is open</b>\n\nSend this to customers:\n${link}\n\nManage your shop on the web (keep private):\n${await manageLink(c.env, sid)}`,
     [[{ text: "📤 Share on Telegram", url: `https://t.me/share/url?url=${link}` }]]
       .concat(webLink(shop, sid) ? [[{ text: "🌐 Public page", url: webLink(shop, sid) }]] : []),
     { speak: `${d.shopName} is open.` });
@@ -1013,6 +1014,12 @@ async function onMessage(c, m) {
   if (text === "/admin" && chat === ADMIN) return showAdmin(c, chat);
   if (text === "/sales") return showSales(c, chat);
   if (text === "/orders") return showOrders(c, chat);
+  if (text === "/web") {
+    const [sid] = await myShop(c, chat);
+    if (!sid) return startOnboarding(c, chat);
+    const link = await manageLink(c.env, sid);
+    return send(c, chat, `🌐 Manage your shop on the web:\n${link}\n\nKeep this link private.`, [[{ text: "🌐 Open", url: link }]]);
+  }
 
   const step = s.step || "";
   if (step === "setloc") {

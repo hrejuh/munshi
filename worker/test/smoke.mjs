@@ -109,6 +109,13 @@ assert.equal(shop.page, "https://telegra.ph/Ravi-Stores-10-24");
 assert.deepEqual(JSON.parse(kv.get("index:shops")), [sid]);
 assert.ok(sent().some(t => /Ravi Stores is open/.test(t)));
 
+assert.ok(sent().some(t => /Manage your shop on the web.*\/m\//s.test(t)), "manage link after onboarding");
+await post(msg(OWNER, { text: "/web" }));
+assert.match(sent().at(-1), new RegExp(`Manage your shop on the web:\\n\\S+/m/${sid}\\?k=[0-9a-f]{24}`));
+
+await worker.fetch(new Request("https://x.dev/setup?key=s3cret"), env, {});
+assert.ok(calls.findLast(c => c.url.endsWith("/setMyCommands")).body.commands.some(c => c.command === "web"), "/web in the menu");
+
 // owner chat by text: no voice reply
 const b2 = calls.length;
 await post(msg(OWNER, { text: "chai 12 kar do" }));
