@@ -626,7 +626,7 @@ async function showOrders(c, chat) {
   const [sid, shop] = await myShop(c, chat);
   if (!shop) return;
   const mine = (await allOrders(c)).filter(([, o]) => o.shop === sid).sort((a, b) => b[1].at - a[1].at).slice(0, 10);
-  const icon = { new: "🟡", accepted: "✅", declined: "✖" };
+  const icon = { new: "🟡", accepted: "✅", out: "🛵", completed: "✔", declined: "✖" };
   const body = mine.map(([k, o]) => `${icon[o.status] || ""} #${k} · ${rs(o.total)} · ${hm(o.at)}`).join("\n") || "No orders yet.";
   return send(c, chat, `📦 <b>Orders</b>\n\n${body}`, [[{ text: "← Back", callback_data: "home" }]]);
 }
@@ -872,9 +872,58 @@ async function notifyOwner(c, oid, o, shop) {
     ownerButtons(oid, o));
 }
 
+// Order life: new -> accepted -> out (out for delivery, or ready for pickup) -> completed; new -> declined.
+// Like Arjun's lib/orders.ts: complete only once it is out/ready. Completed means the cash was collected.
+const FLOW = {
+  accept: { from: ["new"], to: "accepted" },
+  decline: { from: ["new"], to: "declined" },
+  out: { from: ["accepted"], to: "out" },
+  complete: { from: ["out"], to: "completed" },
+};
+const outLabel = o => (o.mode === "pickup" ? "Ready for pickup" : "Out for delivery");
+const STATUS_LABEL = { new: "New", accepted: "Accepted", out: "Out", completed: "Completed", declined: "Declined" };
+
 function ownerButtons(oid, o) {
   if (o.status === "new") return [[{ text: "✅ Accept", callback_data: `ok:${oid}` }, { text: "✖ Can't", callback_data: `no:${oid}` }]];
-  return [[{ text: o.status === "declined" ? "✖ Declined" : "✅ Accepted", callback_data: "home" }]];
+  if (o.status === "declined") return [[{ text: "✖ Declined", callback_data: "home" }]];
+  if (o.status === "completed") return [[{ text: "✔ Completed", callback_data: "home" }]];
+  const rows = [[{ text: o.status === "out" ? `${o.mode === "pickup" ? "🏃" : "🛵"} ${outLabel(o)}` : "✅ Accepted", callback_data: "home" }]];
+  rows.push(o.status === "accepted"
+    ? [{ text: `${o.mode === "pickup" ? "🏃" : "🛵"} ${outLabel(o)}`, callback_data: `out:${oid}` }]
+    : [{ text: "✔ Completed", callback_data: `done:${oid}` }]);
+  return rows;
+}
+
+function buyerUpdate(shopName, oid, o) {
+  const dlv = (o.mode || "delivery") === "delivery";
+  return {
+    accepted: `✅ ${h(shopName)} accepted order #${oid}. ` + (dlv ? "On its way 🛵" : "We'll keep it ready for pickup 🏃"),
+    declined: `✖ ${h(shopName)} can't take order #${oid} right now.`,
+    out: dlv ? `🛵 Order #${oid} from ${h(shopName)} is out for delivery.` : `🏃 Order #${oid} is ready for pickup at ${h(shopName)}.`,
+    completed: `✔ Order #${oid} from ${h(shopName)} is complete. Thank you 🙏`,
+  }[o.status];
+}
+
+// The owner moves an order on (from Telegram or the web). Returns { order } or { error }.
+async function setStatus(c, sid, oid, action) {
+  const o = await getOrder(c, oid);
+  if (!o || o.shop !== sid) return { error: "Order not found." };
+  const rule = FLOW[action];
+  if (!rule) return { error: "Unknown action." };
+  if (!rule.from.includes(o.status)) return { error: `Order #${oid} is ${(STATUS_LABEL[o.status] || o.status).toLowerCase()} already.`, order: o };
+  o.status = rule.to;
+  o.updated = now();
+  await save(c);
+  const sh = await getShop(c, sid);
+  if (o.buyer) await send(c, o.buyer, buyerUpdate(sh ? sh.shopName : "The shop", oid, o));
+  console.log(`ORDER ${oid} -> ${o.status}`);
+  return { order: o };
+}
+
+async function cashToday(c, sid) {
+  const start = istDayStart();
+  return (await allOrders(c)).filter(([, o]) => o.shop === sid && o.status === "completed" && (o.updated || o.at) >= start)
+    .reduce((a, [, o]) => a + o.total, 0);
 }
 
 // ---------- web orders: POST /api/order/<sid>, status at /o/<oid>?c=<code> ----------
@@ -1072,19 +1121,16 @@ async function onCallback(c, q) {
     await save(c);
     return tg(c, "editMessageReplyMarkup", { chat_id: chat, message_id: mid, reply_markup: catalogueMarkup(sid, shop, cart) });
   }
-  if (kind === "ok" || kind === "no") {
-    const o = await getOrder(c, rest[0]);
+  if (["ok", "no", "out", "done"].includes(kind)) {
+    const oid = rest[0];
+    const o = await getOrder(c, oid);
     if (!o) return;
     const sh = await getShop(c, o.shop);
     if (!sh || String(sh.owner) !== String(chat)) return;
-    o.status = kind === "ok" ? "accepted" : "declined";
-    await save(c);
-    const shop = sh.shopName;
-    await tg(c, "editMessageReplyMarkup", { chat_id: chat, message_id: mid,
-      reply_markup: { inline_keyboard: [[{ text: kind === "ok" ? "✅ Accepted" : "✖ Declined", callback_data: "home" }]] } });
-    return send(c, o.buyer, kind === "ok"
-      ? `✅ ${h(shop)} accepted order #${rest[0]}. ` + ((o.mode || "delivery") === "delivery" ? "On its way 🛵" : "We'll keep it ready for pickup 🏃")
-      : `✖ ${h(shop)} can't take order #${rest[0]} right now.`);
+    const r = await setStatus(c, o.shop, oid, { ok: "accept", no: "decline", out: "out", done: "complete" }[kind]);
+    if (r.order) await tg(c, "editMessageReplyMarkup", { chat_id: chat, message_id: mid, reply_markup: { inline_keyboard: ownerButtons(oid, r.order) } });
+    if (r.error) await send(c, chat, h(r.error));
+    return;
   }
 }
 
@@ -1370,6 +1416,16 @@ async function manageRoute(req, env, url, ctx) {
     const have = parseInt(url.searchParams.get("have"), 10) || 0;
     return json({ items: templateItems(decodeURIComponent(parts[4] || ""), url.searchParams.get("lang"), MAX_ITEMS - have) });
   }
+  if (parts[3] === "orders") {
+    if (req.method === "POST" && parts[4]) {
+      let b = {};
+      try { b = await req.json(); } catch {}
+      const r = await setStatus(c, sid, parts[4], String((b && b.action) || ""));
+      if (r.error) return json({ error: r.error, ...(await ordersView(c, sid)) });
+      return json({ ok: true, ...(await ordersView(c, sid)) });
+    }
+    return json(await ordersView(c, sid));
+  }
   if (req.method === "GET") return json(shopView(shop));
 
   if (req.method === "POST" && parts[3] === "voice") {
@@ -1414,6 +1470,21 @@ async function manageRoute(req, env, url, ctx) {
   return new Response("not allowed", { status: 405 });
 }
 
+// The owner's view of recent orders (owner only: includes buyer contact details).
+async function ordersView(c, sid) {
+  const mine = (await allOrders(c)).filter(([, o]) => o.shop === sid).sort((a, b) => b[1].at - a[1].at).slice(0, 30);
+  const d = sec => { const x = istDate(sec); return `${x.getUTCDate()} ${MON[x.getUTCMonth()]} ${hm(sec)}`; };
+  return {
+    cash: await cashToday(c, sid),
+    orders: mine.map(([oid, o]) => ({
+      oid, when: d(o.at), status: o.status, mode: o.mode || "delivery", total: o.total, source: o.source || "telegram",
+      lines: o.lines.map(([n, q]) => `${q}× ${n}`).join(", "), who: [o.buyerName, o.address].filter(Boolean).join(", "),
+      phone: o.phone || "", note: o.note || "",
+      actions: Object.entries(FLOW).filter(([, r]) => r.from.includes(o.status)).map(([a]) => a),
+    })),
+  };
+}
+
 function managePage(sid, shop) {
   const css = PAGE_CSS + FORM_CSS + `
 .it{display:grid;grid-template-columns:1fr 84px 32px;gap:6px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px}
@@ -1431,6 +1502,12 @@ function managePage(sid, shop) {
 .top{display:flex;justify-content:space-between;align-items:center}
 .top a{color:var(--soft);font-size:14px}
 .tp{display:grid;grid-template-columns:1fr 110px;gap:6px}
+h2{font-size:20px;margin:26px 0 0}
+.oc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:15px}
+.oc .hd{display:flex;justify-content:space-between;gap:8px}.oc small{display:block;color:var(--soft);font-size:13px;margin-top:3px}
+.acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.acts button{font:inherit;font-size:14px;font-weight:600;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:7px 12px;cursor:pointer}
+.acts button.pri{background:var(--acc);border-color:var(--acc);color:#1d1206}
 `;
   const data = JSON.stringify(shopView(shop)).replace(/</g, "\\u003c");
   return new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1438,6 +1515,9 @@ function managePage(sid, shop) {
 <div class="top"><span class="mark"><i></i>munshi</span><a href="/s/${encodeURIComponent(sid)}" target="_blank">public page ↗</a></div>
 <div class="f"><label>shop name</label><input id="n"><label>area</label><input id="a"><label>phone</label><input id="p" inputmode="tel"></div>
 <div class="say" id="say"></div>
+<h2>Orders</h2><p class="sub" id="cash"></p>
+<div class="list" id="orders"></div>
+<h2>Items</h2>
 <div class="list" id="items"></div>
 <div class="list"><button class="add" id="addb">+ add item</button>
 <div class="tp"><select id="tc"><option value="">📋 start from a template</option>${Object.entries(TEMPLATES).map(([k, t]) => `<option value="${h(k)}">${h(t.label.en)}</option>`).join("")}</select><select id="tl">${LANGS.map(([k, l]) => `<option value="${k}">${l}</option>`).join("")}</select></div></div>
@@ -1476,6 +1556,32 @@ $("tc").onchange = async () => {
   S.items.push(...r.items); render(); dirty();
   show("Added " + r.items.length + ". Check the prices, then Save.");
 };
+const OAPI = API.replace("?", "/orders?"), ST = { new: "🟡 new", accepted: "✅ accepted", out: "🛵 out", completed: "✔ completed", declined: "✖ declined" };
+const ACT = { accept: "Accept", decline: "Decline", out: "Out for delivery", complete: "Completed" };
+const money = n => "₹" + Number(n).toLocaleString("en-IN", { maximumFractionDigits: 2 });
+function orders(r) {
+  if (r.error) show(esc(r.error));
+  $("cash").textContent = "cash collected today " + money(r.cash || 0);
+  const box = $("orders"); box.innerHTML = "";
+  if (!r.orders || !r.orders.length) { box.innerHTML = '<p class="sub">No orders yet.</p>'; return; }
+  for (const o of r.orders) {
+    const d = document.createElement("div"); d.className = "oc";
+    d.innerHTML = '<div class="hd"><b></b><span></span></div><small class="l"></small><small class="w"></small><div class="acts"></div>';
+    d.querySelector("b").textContent = "#" + o.oid + " · " + money(o.total);
+    d.querySelector(".hd span").textContent = (ST[o.status] || o.status) + (o.status === "out" && o.mode === "pickup" ? " (ready)" : "");
+    d.querySelector(".l").textContent = o.when + " · " + (o.mode === "pickup" ? "pickup" : "delivery") + (o.source === "web" ? " · web" : "") + " · " + o.lines;
+    d.querySelector(".w").textContent = [o.who, o.phone, o.note && "“" + o.note + "”"].filter(Boolean).join(" · ");
+    for (const a of o.actions) {
+      const b = document.createElement("button"); b.textContent = a === "out" && o.mode === "pickup" ? "Ready for pickup" : ACT[a];
+      if (a !== "decline") b.className = "pri";
+      b.onclick = async () => { b.disabled = true; orders(await (await fetch(OAPI.replace("?", "/" + o.oid + "?"), { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: a }) })).json()); };
+      d.querySelector(".acts").appendChild(b);
+    }
+    box.appendChild(d);
+  }
+}
+const loadOrders = async () => { try { orders(await (await fetch(OAPI)).json()); } catch {} };
+loadOrders(); setInterval(loadOrders, 20000);
 function show(html) { const b = $("say"); b.innerHTML = html; b.style.display = "block"; }
 const esc = s => String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
 let rec, chunks = [];

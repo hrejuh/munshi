@@ -131,6 +131,8 @@ assert.equal(order.total, order.subtotal + order.fee);
 await post(cb(OWNER, `ok:${oid}`));
 assert.equal(JSON.parse(kv.get(`order:${oid}`)).status, "accepted");
 assert.match(sent().at(-1), /accepted order/);
+const kb = () => calls.filter(c => c.url.endsWith("/editMessageReplyMarkup")).at(-1).body.reply_markup.inline_keyboard.flat().map(b => b.callback_data);
+assert.ok(kb().includes(`out:${oid}`), "out for delivery button after accept");
 
 // owner web dashboard: link comes from the Telegram dashboard button
 const mlink = calls.flatMap(c => (c.body && c.body.reply_markup && c.body.reply_markup.inline_keyboard || []).flat()).map(b => b.url).find(u => u && u.includes("/m/"));
@@ -196,6 +198,48 @@ assert.equal((await W(`/o/${placed.oid}`)).status, 404);
 assert.equal((await W(`/o/${oid}?c=`)).status, 404, "telegram orders have no status page");
 assert.deepEqual(await (await W(`/api/o/${placed.oid}?c=${placed.code}`)).json(), { status: "new" });
 assert.equal((await W(`/api/o/${placed.oid}?c=nope`)).status, 404);
+
+// telegram: out for delivery -> completed, buyer told each time; invalid taps refused
+await post(cb(OWNER, `ok:${oid}`));
+assert.match(sent().at(-1), /accepted already/);
+await post(cb(OWNER, `done:${oid}`));
+assert.equal(JSON.parse(kv.get(`order:${oid}`)).status, "accepted", "can't complete before out");
+await post(cb(OWNER, `out:${oid}`));
+assert.equal(JSON.parse(kv.get(`order:${oid}`)).status, "out");
+assert.match(sent().at(-1), /out for delivery/);
+assert.ok(kb().includes(`done:${oid}`));
+await post(cb(OWNER, `done:${oid}`));
+assert.equal(JSON.parse(kv.get(`order:${oid}`)).status, "completed");
+assert.match(sent().at(-1), /complete/);
+await post(cb(BUYER, `ok:${placed.oid}`));
+assert.equal(JSON.parse(kv.get(`order:${placed.oid}`)).status, "new", "only the owner can accept");
+
+// owner web dashboard: orders, valid transitions only, cash collected
+const mp = await (await W(`/m/${sid}${mq}`)).text();
+for (const m of mp.matchAll(/<script>([\s\S]*?)<\/script>/g)) new Function(m[1]);
+const OA = (o, action) => W(`/api/m/${sid}/orders/${o}${mq}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action }) });
+assert.equal((await W(`/api/m/${sid}/orders?k=bad`)).status, 403);
+let ov = await (await W(`/api/m/${sid}/orders${mq}`)).json();
+assert.equal(ov.orders[0].oid === placed.oid || ov.orders[1].oid === placed.oid, true, "newest first");
+assert.deepEqual(ov.orders.find(o => o.oid === placed.oid).actions, ["accept", "decline"]);
+assert.equal(ov.cash, order.total, "cash = the completed telegram order");
+const b4 = calls.length;
+ov = await (await OA(placed.oid, "complete")).json();
+assert.match(ov.error, /new already/);
+ov = await (await OA(placed.oid, "accept")).json();
+assert.ok(ov.ok);
+assert.equal(JSON.parse(kv.get(`order:${placed.oid}`)).status, "accepted");
+await OA(placed.oid, "out");
+ov = await (await OA(placed.oid, "complete")).json();
+assert.equal(JSON.parse(kv.get(`order:${placed.oid}`)).status, "completed");
+assert.equal(ov.cash, order.total + wo.total);
+assert.ok(!calls.slice(b4).some(c => c.url.endsWith("/sendMessage")), "web buyers have no Telegram chat");
+assert.deepEqual(await (await W(`/api/o/${placed.oid}?c=${placed.code}`)).json(), { status: "completed" });
+assert.match(await (await W(placed.url)).text(), /Completed/);
+ov = await (await OA(pick.oid, "decline")).json();
+assert.equal(JSON.parse(kv.get(`order:${pick.oid}`)).status, "declined");
+assert.equal((await (await OA(pick.oid, "accept")).json()).error.includes("declined"), true);
+assert.equal((await (await OA("99999", "accept")).json()).error, "Order not found.");
 
 console.log = origLog;
 assert.deepEqual(errors, [], "no errors logged");
