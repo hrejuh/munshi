@@ -34,7 +34,7 @@ Built at Airtribe AI Builders Day, Bengaluru, 24 Oct 2026.
     npx wrangler deploy
 
 Stop `bot.py` first (a webhook and long polling can't run together). Then open
-`https://munshi.<your-subdomain>.workers.dev/setup?key=<WEBHOOK_SECRET>` once to register the webhook and the bot commands.
+`https://munshi.hrejuh.com/setup?key=<WEBHOOK_SECRET>` (or your own workers.dev / custom domain) once to register the webhook and the bot commands.
 
 To move existing shops and orders over (sessions are not copied):
 

@@ -9,7 +9,9 @@ const ADMIN = 1238521561;
 const IST_MS = 5.5 * 3600 * 1000;
 const VOICE_ID = "cgSgspJ2msm6clMCkdW9";
 const COMMANDS = [
-  { command: "web", description: "Open my shop" }, { command: "new", description: "New shop" },
+  { command: "shop", description: "My shop" }, { command: "orders", description: "Orders" },
+  { command: "sales", description: "Sales" }, { command: "web", description: "Manage on the web" },
+  { command: "new", description: "New shop" },
 ];
 let BOT_NAME = null;
 
@@ -35,11 +37,21 @@ export default {
         allowed_updates: ["message", "callback_query"],
       });
       const cmds = await tgRaw(c, "setMyCommands", { commands: COMMANDS });
+      // refresh every shop's Telegraph page so its links follow PUBLIC_URL
+      const pc = { env, st: new Store(env.DB), bg: [] };
+      ctx.waitUntil((async () => { pc.bot = await botName(pc); for (const [sid] of await allShops(pc)) await publishPage(pc, sid); })());
       // never echo the webhook url back: it contains the secret
       return Response.json({ setWebhook: { ok: hook.ok, description: hook.description }, setMyCommands: { ok: cmds.ok, description: cmds.description } });
     }
+    if (url.pathname === "/wa-templates") {
+      if (!env.WEBHOOK_SECRET || url.searchParams.get("key") !== env.WEBHOOK_SECRET) return new Response("forbidden", { status: 403 });
+      if (!env.MSG91_AUTH_KEY || !env.MSG91_WHATSAPP_NUMBER) return Response.json({ error: "MSG91_AUTH_KEY / MSG91_WHATSAPP_NUMBER not set" });
+      const r = await fetch(`https://control.msg91.com/api/v5/whatsapp/get-template-client/${env.MSG91_WHATSAPP_NUMBER}`, { headers: { authkey: env.MSG91_AUTH_KEY } });
+      return new Response(await r.text(), { status: r.status, headers: { "content-type": "application/json" } });
+    }
     if (url.pathname.startsWith("/m/") || url.pathname.startsWith("/api/m/")) return manageRoute(req, env, url, ctx);
     if (req.method === "POST" && url.pathname.startsWith("/api/order/")) return orderApi(req, env, dec(url.pathname.slice(11)));
+    if (req.method === "POST" && url.pathname.startsWith("/api/talk/")) return talkApi(req, env, dec(url.pathname.slice(10)));
     if (req.method === "GET" && (url.pathname.startsWith("/o/") || url.pathname.startsWith("/api/o/"))) return statusRoute(env, url);
     if (req.method === "GET" && (url.pathname === "/" || url.pathname.startsWith("/s/")))
       return webPage(env, url.pathname === "/" ? null : decodeURIComponent(url.pathname.slice(3)));
@@ -179,7 +191,7 @@ function h(s) {
 }
 
 const shopLink = (c, sid) => `https://t.me/${c.bot}?start=s_${sid}`;
-const PUBLIC_URL = "https://munshi.hrejuh.workers.dev";
+const PUBLIC_URL = "https://munshi.hrejuh.com";
 const webLink = (shop, sid) => (shop && sid) ? `${PUBLIC_URL}/s/${sid}` : "";
 const iname = it => it.local || it.name;
 const shareText = (shop, sid) => `🏪 ${shop.shopName}${shop.area ? " · " + shop.area : ""}\nOrder online, pay cash on delivery:\n${webLink(shop, sid)}`;
@@ -289,7 +301,7 @@ async function geminiJson(c, prompt) {
 const ITEMS_PROMPT = `You help an Indian neighbourhood shop list its products. The shopkeeper said the text below, possibly in Kannada, Hindi, Tamil, English or a mix, possibly transliterated.
 Return only a JSON array: [{"name": English product name, "local": product name in the shopkeeper's own language and script, or "" if they spoke English, "price": number in rupees, "unit": short unit like "1 kg", "500 ml", "each"}]. Skip anything without a price.
 
-Shopkeeper said:
+{history}Shopkeeper said:
 `;
 
 const CLEAN_PROMPT = `A shopkeeper answered "{q}" by voice or text. Return only JSON {"value": the answer cleaned up, in its original script, without filler words}.
@@ -554,11 +566,11 @@ async function dashboard(c, chat) {
     await homeButtons(c, sid, shop));
 }
 
-// Web first: the dashboard and the menu open inside Telegram as mini apps.
+// Everything works in chat; the web dashboard opens inside Telegram as a mini app.
 async function homeButtons(c, sid, shop) {
-  const link = webLink(shop, sid);
-  return [[{ text: "🌐 Manage shop", web_app: { url: await manageLink(c.env, sid) } }],
-    [{ text: "📤 Share", callback_data: "share" }, { text: "👀 View", url: link }]];
+  return [[{ text: "🌐 Manage on web", web_app: { url: await manageLink(c.env, sid) } }],
+    [{ text: "➕ Add", callback_data: "add" }, { text: "✏️ Edit", callback_data: "edit" }, { text: "📦 Orders", callback_data: "orders" }],
+    [{ text: "📊 Sales", callback_data: "sales" }, { text: "🛵 Delivery", callback_data: "dlv" }, { text: "📤 Share", callback_data: "share" }]];
 }
 
 async function shareCatalogue(c, chat) {
@@ -730,7 +742,7 @@ Use no actions for greetings, questions you can answer from the data above, or s
 Shopkeeper said:
 `;
 
-const BUYER_PROMPT = `You are Munshi, the shop assistant for "{shop}" ({area}) on Telegram. A customer is chatting with you in Kannada, Hindi, Tamil, English or a mix. Delivery is cash on delivery.
+const BUYER_PROMPT = `You are Munshi, the shop assistant for "{shop}" ({area}), taking orders online. A customer is chatting with you in Kannada, Hindi, Tamil, English or a mix. Delivery is cash on delivery.
 
 Catalogue (index. English / local name / unit / price):
 {items}
@@ -740,7 +752,7 @@ Customer's cart now: {cart}
 Return only JSON: {"add":[{"index":catalogue index,"qty":number}], "remove":[catalogue index], "checkout": true if they want to place the order now, "reply": "short friendly reply in the customer's language and script, 1-2 sentences"}
 Never say the order is placed or confirmed: if checkout is true, say you need their name and address next. Only offer products in the catalogue. If they ask for something not listed, say so and suggest the closest item. Never invent prices.
 
-Customer said:
+{history}Customer said:
 `;
 
 const MODE_BTNS = [[{ text: "🛵 Home delivery", callback_data: "mode:delivery" }, { text: "🏃 I'll pick up", callback_data: "mode:pickup" }]];
@@ -757,7 +769,7 @@ async function buyerText(c, chat, s, m) {
     .map(([i, q]) => `${q}x ${iname(shop.items[+i])}`).join(", ") || "empty";
   let plan;
   try {
-    plan = await geminiJson(c, fill(BUYER_PROMPT, { shop: shop.shopName, area: shop.area || "", items: catalogueText(shop), cart: cartTxt }) + t);
+    plan = await geminiJson(c, fill(BUYER_PROMPT, { shop: shop.shopName, area: shop.area || "", items: catalogueText(shop), cart: cartTxt, history: "" }) + t);
   } catch (e) {
     console.log("buyer llm", e && e.stack || e);
     return send(c, chat, "Tap the items below to add them.");
@@ -802,8 +814,8 @@ async function showShop(c, chat, sid) {
   Object.assign(s, { shop: sid, cart: {}, step: null });
   await save(c);
   return tg(c, "sendMessage", { chat_id: chat, parse_mode: "HTML",
-    text: `🏪 <b>${h(shop.shopName)}</b>${shop.area ? " · " + h(shop.area) : ""}`,
-    reply_markup: { inline_keyboard: [[{ text: "🛒 Open menu", web_app: { url: webLink(shop, sid) } }]] } });
+    text: `🏪 <b>${h(shop.shopName)}</b>${shop.area ? " · " + h(shop.area) : ""}\n🎙 tap, or just say what you want`,
+    reply_markup: { inline_keyboard: [[{ text: "🌐 Open full menu", web_app: { url: webLink(shop, sid) } }], ...catalogueMarkup(sid, shop, {}).inline_keyboard] } });
 }
 
 async function placeOrder(c, chat, s, phone) {
@@ -861,6 +873,25 @@ async function notifyOwner(c, oid, o, shop) {
     (o.payment === "upi" ? `\n💸 <b>${rs(o.total)} by UPI</b> · check your UPI app, then tap Mark paid` : `\n<b>Collect ${rs(o.total)}</b>`) + `\n\n🙋 ${h(who)}\n📞 ${h(o.phone)}` + (o.note ? `\n📝 ${h(o.note)}` : "") +
     (o.loc ? `\n🗺 https://maps.google.com/?q=${o.loc[0]},${o.loc[1]}` : ""),
     ownerButtons(oid, o));
+}
+
+// WhatsApp status updates to the buyer through MSG91, with the templates Qrave already has.
+// Off until MSG91_AUTH_KEY and MSG91_WHATSAPP_NUMBER are set. Check params with /wa-templates?key=.
+const WA_TEMPLATES = { accepted: "order_confirmed", completed: "order_delivered" };
+async function waStatus(env, oid, o, sh) {
+  const name = o.status === "out" ? (o.mode === "pickup" ? "order_ready" : "out_for_delivery") : WA_TEMPLATES[o.status];
+  const to = String(o.buyerPhone || o.phone || "").replace(/\D/g, "").slice(-10);
+  if (!name || to.length !== 10 || !env.MSG91_AUTH_KEY || !env.MSG91_WHATSAPP_NUMBER) return;
+  const params = (env.MSG91_PARAMS || "name,shop,oid").split(",").map(k => ({ name: o.buyerName || "there", shop: (sh && sh.shopName) || "the shop", oid, total: rs(o.total) }[k.trim()] ?? ""));
+  try {
+    const r = await fetch("https://control.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/bulk/", {
+      method: "POST", signal: AbortSignal.timeout(10000), headers: { authkey: env.MSG91_AUTH_KEY, "content-type": "application/json" },
+      body: JSON.stringify({ integrated_number: env.MSG91_WHATSAPP_NUMBER, content_type: "template", payload: {
+        messaging_product: "whatsapp", type: "template", template: { name, language: { code: "en", policy: "deterministic" },
+          to_and_components: [{ to: ["91" + to], components: Object.fromEntries(params.map((v, i) => [`body_${i + 1}`, { type: "text", value: String(v) }])) }] } } }),
+    });
+    console.log(`wa ${name} ${oid} ${r.status} ${(await r.text()).slice(0, 160)}`);
+  } catch (e) { console.log("wa", String(e)); }
 }
 
 // Order life: new -> accepted -> out (out for delivery, or ready for pickup) -> completed; new -> declined.
@@ -925,6 +956,7 @@ async function setStatus(c, sid, oid, action) {
   await save(c);
   const sh = await getShop(c, sid);
   if (o.buyer) await send(c, o.buyer, buyerUpdate(sh ? sh.shopName : "The shop", oid, o));
+  await waStatus(c.env, oid, o, sh);
   console.log(`ORDER ${oid} -> ${o.status}`);
   return { order: o };
 }
@@ -1304,6 +1336,7 @@ ${sh.upi ? `<div class="seg" id="pay"><button type="button" data-p="upi">Pay now
 <div class="tot" id="tot"></div><p class="err" id="err"></p>
 <p class="sub" style="text-align:center;margin-top:8px" id="paynote">Pay cash on delivery or pickup</p></section>
 <a class="go" id="bar" href="#" hidden></a>
+${TALK_HTML}
 <script>
 const SID = ${jsonForScript(sid)}, ITEMS = ${jsonForScript(items.map(it => ({ n: it.name, l: iname(it), p: it.price })))}, KEY = "munshi-cart-" + SID;
 const I18N = ${jsonForScript(SHOP_I18N)};
@@ -1391,8 +1424,16 @@ $("gl").onclick = () => {
 };
 setLang(lang);
 if (inCo()) requote();
+window.TALK = {
+  url: "/api/talk/" + encodeURIComponent(SID), hello: ${jsonForScript("Hi! Tell me what you'd like 🎙")},
+  extra: () => ({ cart: Object.entries(cart).map(([i, x]) => [+i, x.q]), lang }),
+  apply: r => { for (const [i, q] of r.add || []) setQ(i, ((cart[i] || {}).q || 0) + q); for (const i of r.remove || []) setQ(i, 0); if (r.checkout && count()) location.hash = "checkout"; },
+};
+new MutationObserver(() => document.body.classList.toggle("hasbar", !$("bar").hidden)).observe($("bar"), { attributes: true });
+document.body.classList.toggle("hasbar", !$("bar").hidden);
+${TALK_JS}
 if ($("find")) $("find").oninput = e => { const q = e.target.value.trim().toLowerCase(); document.querySelectorAll(".row[data-i]").forEach(r => { r.hidden = q && !r.textContent.toLowerCase().includes(q); }); };
-</script>`, { css: SHOP_CSS, desc: `${sh.shopName}${sh.area ? " · " + sh.area : ""}: see the menu and order online.` });
+</script>`, { css: SHOP_CSS + TALK_CSS, desc: `${sh.shopName}${sh.area ? " · " + sh.area : ""}: see the menu and order online.` });
 }
 
 async function statusRoute(env, url) {
@@ -1473,6 +1514,157 @@ async function sttBlob(env, buf, mime) {
   return ((await r.json()).text || "").replace(/\[[^\]]*\]|\([^)]*\)/g, " ").replace(/\s+/g, " ").trim();
 }
 
+// One turn of a web voice/text conversation: audio (base64) or text, plus recent turns.
+async function talkInput(env, req, who) {
+  let b;
+  try { b = await req.json(); } catch { return { error: "Bad request." }; }
+  let text = String(b.text || "").replace(/\s+/g, " ").trim().slice(0, 400), heard = "";
+  if (!text) {
+    const a = typeof b.audio === "string" ? b.audio : "";
+    if (a.length < 2000) return { error: "Too short. Try again." };
+    if (a.length > 1200000) return { error: "Too long. Keep it short." };
+    let buf;
+    try { buf = Uint8Array.from(atob(a), ch => ch.charCodeAt(0)).buffer; } catch { return { error: "Bad audio." }; }
+    try { heard = await sttBlob(env, buf, String(b.mime || "audio/webm")); } catch (e) { console.log("web stt", String(e)); }
+    if (wordChars(heard).length < 2) return { error: "Couldn't catch that. Try again." };
+    text = heard;
+  }
+  const turns = (Array.isArray(b.history) ? b.history : []).slice(-8)
+    .filter(x => Array.isArray(x) && typeof x[1] === "string")
+    .map(x => `${x[0] === "user" ? who : "Munshi"}: ${x[1].slice(0, 300)}`);
+  return { text, heard, b, history: turns.length ? `Conversation so far:\n${turns.join("\n")}\n\n` : "" };
+}
+
+const TALK_HITS = new Map(); // per isolate: a soft brake on the public voice endpoint
+function talkLimited(req) {
+  const ip = req.headers.get("cf-connecting-ip") || "?", t = Date.now(), w = TALK_HITS.get(ip);
+  if (!w || t - w[1] > 600000) { TALK_HITS.set(ip, [1, t]); return false; }
+  return ++w[0] > 40;
+}
+
+// Customers talk to the shop on the web page: the reply is spoken, the cart changes on their screen.
+async function talkApi(req, env, sid) {
+  const json = (o, status = 200) => Response.json(o, { status, headers: { "cache-control": "no-store" } });
+  if (talkLimited(req)) return json({ error: "Too many messages. Wait a few minutes." }, 429);
+  const c = { env, st: new Store(env.DB), bg: [] };
+  const shop = await getShop(c, sid);
+  if (!shop) return json({ error: "Shop not found." }, 404);
+  const t = await talkInput(env, req, "Customer");
+  if (t.error) return json({ error: t.error });
+  const n = shop.items.length, cart = {};
+  for (const x of Array.isArray(t.b.cart) ? t.b.cart : []) {
+    const i = parseInt(x && x[0], 10), q = parseInt(x && x[1], 10);
+    if (i >= 0 && i < n && q > 0) cart[i] = Math.min(99, q);
+  }
+  const cartTxt = Object.entries(cart).map(([i, q]) => `${q}x ${iname(shop.items[+i])}`).join(", ") || "empty";
+  let plan = {};
+  try {
+    plan = await geminiJson(c, fill(BUYER_PROMPT, { shop: shop.shopName, area: shop.area || "", items: catalogueText(shop), cart: cartTxt, history: t.history }) + t.text);
+  } catch (e) { console.log("talk llm", String(e)); }
+  plan = plan && typeof plan === "object" ? plan : {};
+  const add = [];
+  for (const a of Array.isArray(plan.add) ? plan.add : []) {
+    const i = parseInt(a && a.index, 10);
+    if (i >= 0 && i < n) add.push([i, Math.min(99, Math.max(1, parseInt(a.qty, 10) || 1))]);
+  }
+  const remove = (Array.isArray(plan.remove) ? plan.remove : []).map(i => parseInt(i, 10)).filter(i => i >= 0 && i < n);
+  const reply = String(plan.reply || (add.length ? "Added." : "Sorry, say that again?")).slice(0, 400);
+  console.log(`talk ${sid}: ${t.text.slice(0, 60)} -> ${JSON.stringify(add)}`);
+  return json({ heard: t.heard, reply, add, remove, checkout: !!plan.checkout, audio: await ttsMp3(env, reply) });
+}
+
+const TALK_CSS = `
+.fab{position:fixed;right:16px;bottom:22px;z-index:15;width:58px;height:58px;border-radius:50%;border:0;background:var(--ink);color:var(--bg);font-size:24px;cursor:pointer;box-shadow:0 12px 30px -10px rgba(60,30,0,.6)}
+body.hasbar .fab{bottom:92px}
+.tk{position:fixed;left:0;right:0;bottom:0;z-index:30;padding:0 10px 10px;display:none}
+.tk.open{display:block}
+.sheet{max-width:560px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:24px;box-shadow:0 24px 60px -20px rgba(60,30,0,.5);padding:12px}
+.msgs{max-height:44vh;overflow:auto;display:flex;flex-direction:column;gap:6px;padding:4px 2px}
+.mb{max-width:86%;padding:9px 13px;border-radius:17px;font-size:15px;line-height:1.35;white-space:pre-line}
+.mb.u{align-self:flex-end;background:#dff3dc;color:#183b1a;border-bottom-right-radius:5px}
+.mb.b{align-self:flex-start;background:var(--bg2);border-bottom-left-radius:5px}
+.mb.n{align-self:center;background:none;color:var(--soft);font-size:13px;padding:2px}
+.tkr{display:flex;gap:8px;align-items:center;margin-top:10px}
+.tkr input{flex:1;min-width:0;font:inherit;font-size:15px;padding:12px 14px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.tkm{width:52px;height:52px;flex:none;border-radius:50%;border:0;background:var(--ink);color:var(--bg);font-size:21px;cursor:pointer}
+.tkm.on{background:var(--acc);color:#1d1206;animation:tkp 1.1s infinite}
+.tkm.wait{opacity:.55}
+@keyframes tkp{50%{box-shadow:0 0 0 10px color-mix(in srgb,var(--acc) 25%,transparent)}}
+.tkx{background:none;border:0;color:var(--soft);font-size:22px;cursor:pointer;padding:0 4px}
+.tkh{display:flex;justify-content:space-between;align-items:center;padding:0 4px 4px;font:600 15px var(--disp)}
+`;
+const TALK_HTML = `<button class="fab" id="fab" aria-label="Talk">🎙</button>
+<div class="tk" id="tk"><div class="sheet"><div class="tkh"><span>Munshi</span><button class="tkx" id="tkx" aria-label="Close">×</button></div><div class="msgs" id="msgs"></div>
+<form class="tkr" id="tkf"><input id="tki" placeholder="type, or tap 🎙" autocomplete="off"><button class="tkm" id="tkm" type="button">🎙</button></form></div></div>`;
+// Hands-free: listen, stop on a pause, send, speak the reply, listen again. Tap 🎙 to cut in or stop.
+const TALK_JS = `
+(() => {
+const K = window.TALK, $t = id => document.getElementById(id);
+let hist = [], live = false, rec = null, stream = null, ac = null, au = null, busy = false;
+const say = (cls, text) => { const d = document.createElement("div"); d.className = "mb " + cls; d.textContent = text; $t("msgs").appendChild(d); $t("msgs").scrollTop = 1e9; };
+const state = s => { $t("tkm").className = "tkm " + s; $t("tkm").textContent = s === "on" ? "■" : s === "wait" ? "…" : "🎙"; };
+const b64 = blob => new Promise(r => { const f = new FileReader(); f.onload = () => r(String(f.result).split(",")[1] || ""); f.readAsDataURL(blob); });
+function open() { $t("tk").classList.add("open"); $t("fab").hidden = true; if (!$t("msgs").children.length) say("b", K.hello); }
+function release() { if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; } }
+function close() { live = false; if (rec && rec.state === "recording") { rec.cancel = true; rec.stop(); } if (au) au.pause(); release(); state(""); $t("tk").classList.remove("open"); $t("fab").hidden = false; }
+function next() { state(""); if (live) listen(); else release(); }
+async function send(body) {
+  busy = true; state("wait");
+  let r;
+  try { r = await (await fetch(K.url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...body, history: hist.slice(-8), ...K.extra() }) })).json(); }
+  catch { r = { error: "Network problem. Try again." }; }
+  busy = false;
+  if (r.heard) { say("u", r.heard); hist.push(["user", r.heard]); }
+  if (r.error) { say("n", r.error); live = false; return next(); }
+  if (r.reply) { say("b", r.reply); hist.push(["munshi", r.reply]); }
+  try { K.apply(r, say); } catch (e) {}
+  if (r.checkout) live = false;
+  if (!r.audio) return next();
+  au = new Audio("data:audio/mpeg;base64," + r.audio); au.onended = next;
+  au.play().catch(next);
+}
+async function listen() {
+  if (busy) return;
+  try { stream = stream || await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); }
+  catch { live = false; say("n", "Allow the microphone, or type."); return state(""); }
+  ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+  if (ac.state === "suspended") ac.resume();
+  const src = ac.createMediaStreamSource(stream), an = ac.createAnalyser(); an.fftSize = 1024; src.connect(an);
+  const buf = new Uint8Array(an.fftSize), chunks = [], t0 = performance.now();
+  let spoke = false, quiet = t0;
+  const r = rec = new MediaRecorder(stream);
+  r.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+  r.onstop = async () => {
+    src.disconnect();
+    if (r.cancel) return;
+    if (!spoke) { live = false; return next(); }
+    const blob = new Blob(chunks, { type: r.mimeType || "audio/webm" });
+    send({ audio: await b64(blob), mime: blob.type });
+  };
+  r.start(250); state("on");
+  const tick = () => {
+    if (r.state !== "recording") return;
+    an.getByteTimeDomainData(buf);
+    let e = 0; for (const v of buf) { const x = (v - 128) / 128; e += x * x; }
+    const now = performance.now();
+    if (Math.sqrt(e / buf.length) > 0.035) { spoke = true; quiet = now; }
+    if ((spoke && now - quiet > 1300) || now - t0 > 20000 || (!spoke && now - t0 > 9000)) return r.stop();
+    setTimeout(tick, 60);
+  };
+  tick();
+}
+$t("fab").onclick = () => { open(); live = true; listen(); };
+$t("tkx").onclick = close;
+$t("tkm").onclick = () => {
+  if (rec && rec.state === "recording") { live = false; rec.stop(); return; }
+  if (au && !au.paused) { au.pause(); live = true; return listen(); }
+  if (busy) return;
+  live = true; listen();
+};
+$t("tkf").onsubmit = e => { e.preventDefault(); const v = $t("tki").value.trim(); if (!v || busy) return; $t("tki").value = ""; say("u", v); hist.push(["user", v]); live = false; send({ text: v }); };
+})();
+`;
+
 const shopView = sh => ({ shopName: sh.shopName || "", area: sh.area || "", phone: sh.phone || "", upi: sh.upi || "", items: sh.items || [] });
 const UPI_RE = /^[a-zA-Z0-9._-]{2,64}@[a-zA-Z][a-zA-Z0-9]{1,63}$/;
 const upiLink = (o, oid, shopName) => `upi://pay?pa=${encodeURIComponent(o.upi)}&pn=${encodeURIComponent(shopName || "Shop")}` +
@@ -1509,25 +1701,22 @@ async function manageRoute(req, env, url, ctx) {
   if (req.method === "GET") return json(shopView(shop));
 
   if (req.method === "POST" && parts[3] === "voice") {
-    const buf = await req.arrayBuffer();
-    if (buf.byteLength < 1500) return json({ error: "Too short. Hold the mic a little longer." });
-    let heardText = "";
-    try { heardText = await sttBlob(env, buf, req.headers.get("content-type")); } catch (e) { console.log("web stt", String(e)); }
-    if (wordChars(heardText).length < 2) return json({ error: "Couldn't catch that. Try again, a little closer." });
-    console.log(`web voice ${sid}: ${heardText.slice(0, 80)}`);
+    const t = await talkInput(env, req, "Shopkeeper");
+    if (t.error) return json({ error: t.error });
+    console.log(`web talk ${sid}: ${t.text.slice(0, 80)}`);
     let plan;
     try {
       plan = await geminiJson(c, fill(OWNER_PROMPT, {
-        shop: shop.shopName, items: catalogueText(shop),
-        today: JSON.stringify(await sales(c, sid, true)), alltime: JSON.stringify(await sales(c, sid)) }) + heardText);
+        shop: shop.shopName, items: catalogueText(shop), history: t.history,
+        today: JSON.stringify(await sales(c, sid, true)), alltime: JSON.stringify(await sales(c, sid)) }) + t.text);
     } catch (e) {
-      plan = { actions: [{ type: "add", items: await parseItems(c, heardText) }], reply: "" };
+      plan = { actions: [{ type: "add", items: await parseItems(c, t.text) }], reply: "" };
     }
     plan = plan && typeof plan === "object" ? plan : {};
     const { notes } = applyOwnerPlan(shop, plan);
     if (notes.length) { await save(c); ctx.waitUntil(publishPage(c, sid)); }
     const reply = plan.reply || (notes.length ? "Done." : "");
-    return json({ heard: heardText, reply, notes: notes.map(unh), shop: shopView(shop), audio: await ttsMp3(env, reply) });
+    return json({ heard: t.heard, reply, notes: notes.map(unh), shop: shopView(shop), audio: await ttsMp3(env, reply) });
   }
 
   if (req.method === "POST") {
@@ -1571,7 +1760,8 @@ async function ordersView(c, sid) {
 }
 
 function managePage(sid, shop) {
-  const css = PAGE_CSS + FORM_CSS + `
+  const css = PAGE_CSS + FORM_CSS + TALK_CSS + `
+.fab{display:none!important}
 .it{display:grid;grid-template-columns:1fr 84px 32px;gap:6px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px}
 .it .sub2{grid-column:1/3;display:grid;grid-template-columns:1fr 84px;gap:6px}
 .it input{padding:8px 10px;font-size:15px}
@@ -1625,7 +1815,8 @@ details.set[open] summary:after{content:"−"}
 <details class="set"><summary>Shop details</summary><div class="f"><label>shop name</label><input id="n"><label>area</label><input id="a"><label>phone</label><input id="p" inputmode="tel"><label>UPI ID</label><input id="u" placeholder="name@bank" autocapitalize="off"></div></details>
 <div style="height:90px"></div>
 </main>
-<div class="bar"><div><button class="mic" id="mic" title="Tap and speak">🎙</button><button class="save" id="save">Save</button></div></div>
+<div class="bar"><div><button class="mic" id="mic" title="Talk to Munshi">🎙</button><button class="save" id="save">Save</button></div></div>
+${TALK_HTML}
 <script>
 const API = "/api/m/${encodeURIComponent(sid)}" + location.search;
 let S = ${data};
@@ -1687,30 +1878,13 @@ const loadOrders = async () => { try { orders(await (await fetch(OAPI)).json());
 loadOrders(); setInterval(loadOrders, 20000);
 function show(html) { const b = $("say"); b.innerHTML = html; b.style.display = "block"; }
 const esc = s => String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
-let rec, chunks = [];
-$("mic").onclick = async () => {
-  if (rec && rec.state === "recording") return rec.stop();
-  let stream;
-  try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch { return alert("Allow the microphone to talk to Munshi."); }
-  chunks = []; rec = new MediaRecorder(stream);
-  rec.ondataavailable = e => chunks.push(e.data);
-  rec.onstop = async () => {
-    stream.getTracks().forEach(t => t.stop()); $("mic").classList.remove("on"); $("mic").textContent = "…";
-    const blob = new Blob(chunks, { type: rec.mimeType || "audio/webm" });
-    try {
-      const r = await (await fetch(API.replace("?", "/voice?"), { method: "POST", headers: { "content-type": blob.type }, body: blob })).json();
-      if (r.error) show(esc(r.error));
-      else {
-        show("<small>you said: " + esc(r.heard) + "</small>" + esc(r.reply) + (r.notes.length ? "<br>" + r.notes.map(esc).join("<br>") : ""));
-        if (r.shop) { S = r.shop; render(); $("save").textContent = "Saved ✓"; }
-        if (r.audio) new Audio("data:audio/mpeg;base64," + r.audio).play().catch(() => {});
-      }
-    } catch { show("Something went wrong. Try again."); }
-    $("mic").textContent = "🎙";
-  };
-  rec.start(); $("mic").classList.add("on"); $("mic").textContent = "■";
-  show("Listening… tap ■ when done. Try: “chai 15 kar do, samosa 20 add karo”");
+window.TALK = {
+  url: API.replace("?", "/voice?"), hello: "Namaste! Tell me what to change, or ask about sales 🎙",
+  extra: () => ({}),
+  apply: (r, say) => { (r.notes || []).forEach(n => say("n", n)); if (r.shop) { S = r.shop; render(); $("save").textContent = "Saved ✓"; } },
 };
+${TALK_JS}
+$("mic").onclick = () => $("fab").click();
 render();
 </script></body></html>`, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
 }

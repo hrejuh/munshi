@@ -3,6 +3,8 @@
 name = "munshi"
 main = "worker/src/index.js"
 compatibility_date = "2026-10-01"
+routes = [{ pattern = "munshi.hrejuh.com", custom_domain = true }]
+workers_dev = true
 
 [[kv_namespaces]]
 binding = "DB"

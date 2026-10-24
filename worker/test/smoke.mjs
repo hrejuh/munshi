@@ -113,7 +113,7 @@ const btns = () => calls.flatMap(c => (c.body && c.body.reply_markup && c.body.r
 await post(msg(OWNER, { text: "/web" }));
 assert.match(calls.findLast(c => c.url.endsWith("/sendMessage")).body.reply_markup.inline_keyboard[0][0].web_app.url, new RegExp(`/m/${sid}\\?k=[0-9a-f]{24}`));
 
-await worker.fetch(new Request("https://x.dev/setup?key=s3cret"), env, {});
+await worker.fetch(new Request("https://x.dev/setup?key=s3cret"), env, { waitUntil: () => {} });
 assert.ok(calls.findLast(c => c.url.endsWith("/setMyCommands")).body.commands.some(c => c.command === "web"), "/web in the menu");
 
 // owner chat by text: no voice reply
@@ -124,7 +124,7 @@ assert.equal(JSON.parse(kv.get(`shop:${sid}`)).items[0].price, 12);
 
 // buyer: open shop, tap, chat, delivery, location, address, phone
 await post(msg(BUYER, { text: `/start s_${sid}` }));
-assert.ok(btns().at(-1).web_app.url.endsWith(`/s/${sid}`), "buyer gets the web menu");
+assert.ok(btns().some(b => b.web_app && b.web_app.url.endsWith(`/s/${sid}`)) && btns().at(-1).callback_data === `a:${sid}:${shop.items.length - 1}`, "buyer gets web menu and chat catalogue");
 await post(cb(BUYER, `a:${sid}:0`));
 await post(msg(BUYER, { text: "do samose bhi" }));
 assert.equal(sent().at(-1), "How do you want it?");
@@ -198,6 +198,14 @@ const pick = await (await order$({ ...base, mode: "pickup", address: "" })).json
 assert.ok(pick.ok);
 assert.equal(JSON.parse(kv.get(`order:${pick.oid}`)).total, 44, "pickup: no fee");
 
+// web conversation: customer by text, cart echoed back, bad input rejected
+const talk = b => W(`/api/talk/${sid}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(b) });
+const tr = await (await talk({ text: "do samose bhi", cart: [[0, 1], [999, 5]], history: [["user", "hi"], ["munshi", "hello"]] })).json();
+assert.ok(typeof tr.reply === "string" && Array.isArray(tr.add) && tr.add.every(([i]) => i >= 0 && i < 39), "talk reply");
+assert.ok((await (await talk({ audio: "abc" })).json()).error, "short audio rejected");
+assert.equal((await talk({ text: "hi" }).then(r => r.status)), 200);
+assert.ok((await (await W(`/api/m/${sid}/voice${mq}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: "chai 13 kar do" }) })).json()).reply !== undefined, "owner talk by text");
+
 // status page: needs the code; never shows the buyer's phone or address
 const sp = await W(placed.url);
 assert.equal(sp.status, 200);
@@ -234,7 +242,7 @@ assert.match(mp, /t\.me\/share\/url\?url=/);
 assert.match(mp, /id="copy"/);
 assert.match(mp, /<svg[^>]*aria-label="QR code"[\s\S]*?<path d="M/);
 assert.ok(page.includes("https://wa.me/?text="), "share on the public page");
-assert.equal(qrMatrix("https://munshi.hrejuh.workers.dev/s/" + sid).length, 33, "version 4");
+assert.equal(qrMatrix("https://munshi.hrejuh.com/s/" + sid).length, 33, "version 4");
 assert.equal(qrMatrix("x".repeat(300)), null, "too long for v10");
 
 // owner web dashboard: orders, valid transitions only, cash collected
