@@ -91,10 +91,19 @@ uid--;
 await post(msg(OWNER, { voice: { file_id: "F1" } }));
 assert.equal(calls.length, n, "duplicate update skipped");
 
+// template at the items step: pick one, pick a language, items are appended
+await post(cb(OWNER, "tpl"));
+assert.match(sent().at(-1), /Pick a template/);
+await post(cb(OWNER, "tpl:bakery"));
+await post(cb(OWNER, "tpl:bakery:kn"));
+assert.match(sent().at(-1), /Added 37 from Bakery/);
+assert.equal(JSON.parse(kv.get(`sess:${OWNER}`)).draft.items.length, 39);
+
 await post(cb(OWNER, "ob_done"));
 const sid = JSON.parse(kv.get(`owner:${OWNER}`));
 const shop = JSON.parse(kv.get(`shop:${sid}`));
-assert.equal(shop.items.length, 2);
+assert.equal(shop.items.length, 39);
+assert.ok(shop.items[2].local && /[\u0C80-\u0CFF]/.test(shop.items[2].local), "kannada local names");
 assert.equal(shop.page, "https://telegra.ph/Ravi-Stores-10-24");
 assert.deepEqual(JSON.parse(kv.get("index:shops")), [sid]);
 assert.ok(sent().some(t => /Ravi Stores is open/.test(t)));
@@ -122,6 +131,16 @@ assert.equal(order.total, order.subtotal + order.fee);
 await post(cb(OWNER, `ok:${oid}`));
 assert.equal(JSON.parse(kv.get(`order:${oid}`)).status, "accepted");
 assert.match(sent().at(-1), /accepted order/);
+
+// owner web dashboard: link comes from the Telegram dashboard button
+const mlink = calls.flatMap(c => (c.body && c.body.reply_markup && c.body.reply_markup.inline_keyboard || []).flat()).map(b => b.url).find(u => u && u.includes("/m/"));
+const mq = new URL(mlink).search;
+const W = (path, init) => worker.fetch(new Request("https://x.dev" + path, init), env, { waitUntil: () => {} });
+assert.equal((await W(`/m/${sid}?k=bad`)).status, 403);
+assert.match(await (await W(`/m/${sid}${mq}`)).text(), /start from a template/);
+const tplRes = await (await W(`/api/m/${sid}/template/kirana${mq}&lang=hi&have=10`)).json();
+assert.equal(tplRes.items.length, 50);
+assert.ok(tplRes.items.every(i => i.name && i.price > 0) && /[\u0900-\u097F]/.test(tplRes.items[0].local));
 
 // dashboards
 await post(msg(OWNER, { text: "/sales" }));

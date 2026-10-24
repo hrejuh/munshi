@@ -2,6 +2,8 @@
 // Secrets: TELEGRAM_TOKEN, ELEVENLABS_API_KEY, OPENROUTER_API_KEY, GEMINI_API_KEY, TELEGRAPH_TOKEN, WEBHOOK_SECRET.
 // KV binding: DB. Keys: shop:<sid>, order:<oid>, sess:<chat>, owner:<chat> -> sid, index:shops, index:orders, upd:<update_id>.
 
+import { TEMPLATES } from "./templates.js";
+
 const ADMIN = 1238521561;
 const IST_MS = 5.5 * 3600 * 1000;
 const VOICE_ID = "cgSgspJ2msm6clMCkdW9";
@@ -433,6 +435,21 @@ function itemsSummary(items, limit = 30) {
 }
 
 const DONE_BTN = [[{ text: "✅ Done, open my shop", callback_data: "ob_done" }]];
+const ITEMS_BTNS = [[{ text: "📋 Start from a template", callback_data: "tpl" }], ...DONE_BTN];
+const MAX_ITEMS = 60; // a Telegram keyboard holds 100 buttons; the catalogue keeps one per item
+const LANGS = [["kn", "ಕನ್ನಡ"], ["hi", "हिन्दी"], ["ta", "தமிழ்"], ["en", "English"]];
+
+// Up to `room` items from a starter catalogue, spread evenly across it so every group shows up.
+function templateItems(cat, lang, room = MAX_ITEMS) {
+  const t = TEMPLATES[cat];
+  if (!t || !(room > 0)) return [];
+  const all = t.items, n = Math.min(room, all.length), out = [];
+  for (let k = 0; k < n; k++) {
+    const it = all[Math.floor((k * all.length) / n)];
+    out.push({ name: it.name, local: (lang && it.local[lang]) || "", price: it.price, unit: it.unit });
+  }
+  return out;
+}
 
 async function onboardingStep(c, chat, s, m) {
   const step = s.step;
@@ -454,7 +471,7 @@ async function onboardingStep(c, chat, s, m) {
     await save(c);
     await tg(c, "sendMessage", { chat_id: chat, text: "✓", reply_markup: { remove_keyboard: true } });
     return send(c, chat, "🎙 <b>Now, what do you sell?</b>\nSay items with prices, like <i>\"aata 5 kilo 260, chawal kilo 58\"</i>.\nSend as many as you like.",
-      DONE_BTN, { speak: "Now, what do you sell? Say items with prices." });
+      ITEMS_BTNS, { speak: "Now, what do you sell? Say items with prices." });
   }
   const t = await heard(c, m, chat);
   if (!t) return;
@@ -479,9 +496,26 @@ async function onboardingStep(c, chat, s, m) {
     if (!fresh.length) return send(c, chat, "No prices caught. Try: <i>rice 1 kilo 60</i>", null, { speak: true });
     d.items = (d.items || []).concat(fresh);
     await save(c);
-    return send(c, chat, `Added ${fresh.length}:\n${itemsSummary(fresh)}\n\n<b>${d.items.length} items so far.</b> Send more, or:`, DONE_BTN,
+    return send(c, chat, `Added ${fresh.length}:\n${itemsSummary(fresh)}\n\n<b>${d.items.length} items so far.</b> Send more, or:`, ITEMS_BTNS,
       { speak: `Added ${fresh.length}. ${d.items.length} items so far. Send more, or tap done.` });
   }
+}
+
+// Onboarding, items step: pick a starter catalogue, then the language for local names.
+async function applyTemplate(c, chat, s, cat, lang) {
+  if (s.step !== "ob_items") return;
+  const t = TEMPLATES[cat];
+  if (!t) return send(c, chat, "📋 <b>Pick a template</b>",
+    Object.entries(TEMPLATES).map(([k, v]) => [{ text: `${v.label.en} · ${v.items.length}`, callback_data: `tpl:${k}` }]));
+  if (!lang) return send(c, chat, `📋 ${h(t.label.en)}: local names in?`,
+    [LANGS.map(([code, label]) => ({ text: label, callback_data: `tpl:${cat}:${code}` }))]);
+  const d = (s.draft = s.draft || {});
+  const fresh = templateItems(cat, lang, MAX_ITEMS - (d.items || []).length);
+  if (!fresh.length) return send(c, chat, `You have ${MAX_ITEMS} items already.`, DONE_BTN);
+  d.items = (d.items || []).concat(fresh);
+  await save(c);
+  return send(c, chat, `📋 Added ${fresh.length} from ${h(t.label.en)}:\n${itemsSummary(fresh, 8)}${fresh.length > 8 ? "\n…" : ""}\n\n` +
+    `<b>${d.items.length} items so far.</b> Change prices later in ✏️ Edit items. Send more, or:`, ITEMS_BTNS);
 }
 
 async function finishOnboarding(c, chat) {
@@ -879,6 +913,7 @@ async function onCallback(c, q) {
   const s = await sess(c, chat);
   await tg(c, "answerCallbackQuery", { callback_query_id: q.id });
   if (kind === "ob_done") return finishOnboarding(c, chat);
+  if (kind === "tpl") return applyTemplate(c, chat, s, rest[0], rest[1]);
   if (kind === "home") return dashboard(c, chat);
   if (kind === "new") return startOnboarding(c, chat);
   if (kind === "add") {
@@ -1107,6 +1142,10 @@ async function manageRoute(req, env, url, ctx) {
   const json = o => Response.json(o, { headers: { "cache-control": "no-store" } });
 
   if (!api) return managePage(sid, shop);
+  if (req.method === "GET" && parts[3] === "template") {
+    const have = parseInt(url.searchParams.get("have"), 10) || 0;
+    return json({ items: templateItems(decodeURIComponent(parts[4] || ""), url.searchParams.get("lang"), MAX_ITEMS - have) });
+  }
   if (req.method === "GET") return json(shopView(shop));
 
   if (req.method === "POST" && parts[3] === "voice") {
@@ -1155,7 +1194,7 @@ function managePage(sid, shop) {
   const css = PAGE_CSS + `
 .f{display:grid;gap:8px;margin-top:18px}
 label{font-size:12px;color:var(--soft);letter-spacing:.04em;text-transform:lowercase}
-input{width:100%;font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+input,select{width:100%;font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 input:focus{outline:2px solid var(--acc);border-color:transparent}
 .it{display:grid;grid-template-columns:1fr 84px 32px;gap:6px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px}
 .it .sub2{grid-column:1/3;display:grid;grid-template-columns:1fr 84px;gap:6px}
@@ -1172,6 +1211,7 @@ input:focus{outline:2px solid var(--acc);border-color:transparent}
 .say small{display:block;color:var(--soft);margin-bottom:4px}
 .top{display:flex;justify-content:space-between;align-items:center}
 .top a{color:var(--soft);font-size:14px}
+.tp{display:grid;grid-template-columns:1fr 110px;gap:6px}
 `;
   const data = JSON.stringify(shopView(shop)).replace(/</g, "\\u003c");
   return new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1180,7 +1220,8 @@ input:focus{outline:2px solid var(--acc);border-color:transparent}
 <div class="f"><label>shop name</label><input id="n"><label>area</label><input id="a"><label>phone</label><input id="p" inputmode="tel"></div>
 <div class="say" id="say"></div>
 <div class="list" id="items"></div>
-<div class="list"><button class="add" id="addb">+ add item</button></div>
+<div class="list"><button class="add" id="addb">+ add item</button>
+<div class="tp"><select id="tc"><option value="">📋 start from a template</option>${Object.entries(TEMPLATES).map(([k, t]) => `<option value="${h(k)}">${h(t.label.en)}</option>`).join("")}</select><select id="tl">${LANGS.map(([k, l]) => `<option value="${k}">${l}</option>`).join("")}</select></div></div>
 <div style="height:90px"></div>
 </main>
 <div class="bar"><div><button class="mic" id="mic" title="Tap and speak">🎙</button><button class="save" id="save">Save</button></div></div>
@@ -1207,6 +1248,14 @@ $("save").onclick = async () => {
   const r = await (await fetch(API, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(S) })).json();
   if (r.error) { $("save").textContent = "Save"; return alert(r.error); }
   S = r.shop; render(); $("save").textContent = "Saved ✓";
+};
+$("tc").onchange = async () => {
+  const cat = $("tc").value; if (!cat) return;
+  const r = await (await fetch(API.replace("?", "/template/" + encodeURIComponent(cat) + "?") + "&lang=" + $("tl").value + "&have=" + S.items.length)).json();
+  $("tc").value = "";
+  if (!r.items || !r.items.length) return show("No room for more items.");
+  S.items.push(...r.items); render(); dirty();
+  show("Added " + r.items.length + ". Check the prices, then Save.");
 };
 function show(html) { const b = $("say"); b.innerHTML = html; b.style.display = "block"; }
 const esc = s => String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
