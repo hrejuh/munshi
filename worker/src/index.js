@@ -1218,6 +1218,9 @@ h1{font-size:30px;line-height:1.15;margin:22px 0 4px;letter-spacing:-.01em}
 .go{position:fixed;left:16px;right:16px;bottom:18px;max-width:560px;margin:0 auto;display:block;text-align:center;background:var(--acc);color:#1d1206;font-weight:700;padding:15px;border-radius:14px;text-decoration:none;box-shadow:0 6px 20px rgba(0,0,0,.15)}
 .empty{color:var(--soft);margin-top:30px}
 .alt{display:block;text-align:center;color:var(--soft);font-size:14px;margin-top:18px}
+.langs{display:flex;gap:4px;justify-content:flex-end;margin-top:-22px}
+.langs button{font:inherit;font-size:13px;background:none;border:0;color:var(--soft);padding:4px 6px;cursor:pointer;border-radius:8px}
+.langs button.on{color:var(--ink);background:var(--card);border:1px solid var(--line)}
 `;
 
 const FORM_CSS = `
@@ -1257,6 +1260,16 @@ function pageHtml(title, body, o = {}) {
     { status: o.status || 200, headers: { "content-type": "text/html; charset=utf-8", "cache-control": o.cache || "public, max-age=30" } });
 }
 
+// Buyer-side labels from Arjun's lib/i18n.ts; English is what the page renders.
+const SHOP_I18N = {
+  kn: { delivery: "ಡೆಲಿವರಿ", pickup: "ಪಿಕಪ್", name: "ಹೆಸರು", phone: "ಫೋನ್ ನಂಬರ್", deliveryAddress: "ಡೆಲಿವರಿ ವಿಳಾಸ", payCash: "ಡೆಲಿವರಿ ಅಥವಾ ಪಿಕಪ್ ವೇಳೆ ನಗದು ಪಾವತಿಸಿ",
+    subtotal: "ಉಪ ಮೊತ್ತ", deliveryFee: "ಡೆಲಿವರಿ ಶುಲ್ಕ", total: "ಒಟ್ಟು", placeOrder: "ಆರ್ಡರ್ ಮಾಡಿ", backToShop: "ಅಂಗಡಿಗೆ ಹಿಂತಿರುಗಿ", items: "ಸಾಮಾನು", checkout: "ಚೆಕ್‌ಔಟ್" },
+  hi: { delivery: "डिलीवरी", pickup: "पिकअप", name: "नाम", phone: "फ़ोन नंबर", deliveryAddress: "डिलीवरी का पता", payCash: "डिलीवरी या पिकअप पर नकद भुगतान करें",
+    subtotal: "सामान का कुल", deliveryFee: "डिलीवरी चार्ज", total: "कुल", placeOrder: "ऑर्डर करें", backToShop: "दुकान पर वापस", items: "सामान", checkout: "चेकआउट" },
+  ta: { delivery: "டெலிவரி", pickup: "பிக்கப்", name: "பெயர்", phone: "தொலைபேசி எண்", deliveryAddress: "டெலிவரி முகவரி", payCash: "டெலிவரி அல்லது பிக்கப்பின் போது ரொக்கமாக செலுத்துங்கள்",
+    subtotal: "துணைத் தொகை", deliveryFee: "டெலிவரி கட்டணம்", total: "மொத்தம்", placeOrder: "ஆர்டர் செய்", backToShop: "கடைக்குத் திரும்பு", items: "பொருட்கள்", checkout: "செக்அவுட்" },
+};
+
 const jsonForScript = o => JSON.stringify(o).replace(/</g, "\\u003c").replace(/\u2028|\u2029/g, "");
 
 async function webPage(env, sid) {
@@ -1275,17 +1288,18 @@ async function webPage(env, sid) {
   const items = sh.items || [];
   const rows = items.map((it, i) => `<div class="row" data-i="${i}"><span><b>${h(it.name)}</b>${it.local && it.local !== it.name ? `<small>${h(it.local)}</small>` : ""}</span><span class="rt"><span class="price">${rs(it.price)}${it.unit ? `<small style="font-weight:400;color:var(--soft)">/ ${h(it.unit)}</small>` : ""}</span><span class="qty"><button class="q m" aria-label="one less">−</button><b class="n">0</b><button class="q p" aria-label="one more">+</button></span></span></div>`).join("");
   const tel = sh.phone ? ` · <a href="tel:${h(sh.phone)}" style="color:inherit">📞 ${h(sh.phone)}</a>` : "";
-  return pageHtml(sh.shopName, `${mark}<section id="shop"><h1>${h(sh.shopName)}</h1><p class="sub">${h(sh.area || "")}${tel}</p>
+  return pageHtml(sh.shopName, `${mark}<div class="langs">${[["en", "EN"], ...LANGS.filter(l => l[0] !== "en")].map(([k, l]) => `<button data-l="${k}">${l}</button>`).join("")}</div>
+<section id="shop"><h1>${h(sh.shopName)}</h1><p class="sub">${h(sh.area || "")}${tel}</p>
 <div class="list">${rows || `<p class="empty">Menu coming soon.</p>`}</div>
 <a class="alt" href="${shopLink(c, sid)}">or order on Telegram →</a>
 <a class="alt" href="${h(waShare(sh, sid))}" target="_blank" rel="noopener">share on WhatsApp</a></section>
-<section id="co" hidden><a class="alt" href="#" id="back" style="text-align:left;margin:0">← back</a><h1>Your order</h1>
+<section id="co" hidden><a class="alt" href="#" id="back" style="text-align:left;margin:0">← <span data-t="backToShop">back</span></a><h1 data-t="checkout">Your order</h1>
 <div class="list" id="lines"></div>
-<div class="seg"><button type="button" data-m="delivery" class="on">🛵 Delivery</button><button type="button" data-m="pickup">🏃 Pickup</button></div>
+<div class="seg"><button type="button" data-m="delivery" class="on">🛵 <span data-t="delivery">Delivery</span></button><button type="button" data-m="pickup">🏃 <span data-t="pickup">Pickup</span></button></div>
 ${sh.upi ? `<div class="seg" id="pay"><button type="button" data-p="upi">Pay now by UPI</button><button type="button" data-p="cod" class="on" id="cod">Cash on delivery</button></div>` : ""}
-<div class="f"><label>name</label><input id="bn" maxlength="60" autocomplete="name">
-<label>phone</label><input id="bp" maxlength="15" inputmode="tel" autocomplete="tel">
-<div id="dl" class="f" style="margin:0"><label>delivery address</label><textarea id="ba" maxlength="200" rows="2" autocomplete="street-address"></textarea>
+<div class="f"><label data-t="name">name</label><input id="bn" maxlength="60" autocomplete="name">
+<label data-t="phone">phone</label><input id="bp" maxlength="15" inputmode="tel" autocomplete="tel">
+<div id="dl" class="f" style="margin:0"><label data-t="deliveryAddress">delivery address</label><textarea id="ba" maxlength="200" rows="2" autocomplete="street-address"></textarea>
 <button type="button" class="add" id="gl">📍 use my location</button></div>
 <label>note for the shop</label><input id="bt" maxlength="200" placeholder="optional"></div>
 <div class="tot" id="tot"></div><p class="err" id="err"></p>
@@ -1293,6 +1307,20 @@ ${sh.upi ? `<div class="seg" id="pay"><button type="button" data-p="upi">Pay now
 <a class="go" id="bar" href="#" hidden></a>
 <script>
 const SID = ${jsonForScript(sid)}, ITEMS = ${jsonForScript(items.map(it => ({ n: it.name, l: iname(it), p: it.price })))}, KEY = "munshi-cart-" + SID;
+const I18N = ${jsonForScript(SHOP_I18N)};
+let lang = "en";
+try { lang = localStorage.getItem("munshi-lang") || "en"; } catch {}
+const T = (k, en) => (I18N[lang] || {})[k] || en;
+document.querySelectorAll("[data-t]").forEach(e => { e.dataset.en = e.textContent; });
+function setLang(l) {
+  lang = I18N[l] ? l : "en";
+  try { localStorage.setItem("munshi-lang", lang); } catch {}
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-t]").forEach(e => { e.textContent = T(e.dataset.t, e.dataset.en); });
+  document.querySelectorAll(".langs button").forEach(b => b.classList.toggle("on", b.dataset.l === lang));
+  paint();
+}
+document.querySelectorAll(".langs button").forEach(b => b.onclick = () => setLang(b.dataset.l));
 const $ = id => document.getElementById(id), rs = n => "₹" + Number(n).toLocaleString("en-IN", { maximumFractionDigits: 2 });
 let cart = {}, mode = "delivery", pay = "cod", loc = null, quote = null, busy = false, qseq = 0;
 try { cart = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch {}
@@ -1312,8 +1340,8 @@ function paint() {
   document.querySelectorAll(".row[data-i]").forEach(r => { const q = (cart[r.dataset.i] || {}).q || 0; r.classList.toggle("has", q > 0); r.querySelector(".n").textContent = q; });
   const n = count(), co = inCo();
   $("shop").hidden = co; $("co").hidden = !co; $("bar").hidden = !n;
-  if (!co) { $("bar").textContent = n + (n > 1 ? " items" : " item") + " · " + rs(sub()) + "  →"; return; }
-  $("bar").textContent = busy ? "Placing…" : "Place order · " + rs(quote ? quote.total : sub());
+  if (!co) { $("bar").textContent = n + " " + T("items", n > 1 ? "items" : "item") + " · " + rs(sub()) + "  →"; return; }
+  $("bar").textContent = busy ? "…" : T("placeOrder", "Place order") + " · " + rs(quote ? quote.total : sub());
   $("lines").innerHTML = "";
   for (const [i, x] of Object.entries(cart)) {
     const d = document.createElement("div"); d.className = "row";
@@ -1325,11 +1353,11 @@ function paint() {
   document.querySelectorAll(".seg button[data-m]").forEach(b => b.classList.toggle("on", b.dataset.m === mode));
   document.querySelectorAll(".seg button[data-p]").forEach(b => b.classList.toggle("on", b.dataset.p === pay));
   if ($("cod")) $("cod").textContent = mode === "pickup" ? "Cash at pickup" : "Cash on delivery";
-  $("paynote").textContent = pay === "upi" ? "You'll get a UPI pay button after you place the order" : "Pay cash on delivery or pickup";
+  $("paynote").textContent = pay === "upi" ? "You'll get a UPI pay button after you place the order" : T("payCash", "Pay cash on delivery or pickup");
   const t = quote || { subtotal: sub(), feeCharged: 0, total: sub() };
-  $("tot").innerHTML = "<div><span>items</span><span>" + rs(t.subtotal) + "</span></div>" +
-    (mode === "delivery" ? "<div><span>delivery" + (t.km != null ? " · " + t.km.toFixed(1) + " km" : "") + "</span><span>" + (t.feeCharged ? rs(t.feeCharged) : "free") + "</span></div>" : "") +
-    "<div><span>total</span><span>" + rs(t.total) + "</span></div>";
+  $("tot").innerHTML = "<div><span>" + T("subtotal", "items") + "</span><span>" + rs(t.subtotal) + "</span></div>" +
+    (mode === "delivery" ? "<div><span>" + T("deliveryFee", "delivery") + (t.km != null ? " · " + t.km.toFixed(1) + " km" : "") + "</span><span>" + (t.feeCharged ? rs(t.feeCharged) : "free") + "</span></div>" : "") +
+    "<div><span>" + T("total", "total") + "</span><span>" + rs(t.total) + "</span></div>";
 }
 function body(extra) {
   return JSON.stringify(Object.assign({ lines: Object.entries(cart).map(([i, x]) => ({ i: +i, name: x.n, q: x.q })), mode, loc, payment: pay,
@@ -1362,7 +1390,8 @@ $("gl").onclick = () => {
   navigator.geolocation.getCurrentPosition(p => { loc = [p.coords.latitude, p.coords.longitude]; $("gl").textContent = "📍 location added ✓"; requote(); },
     () => { $("gl").textContent = "📍 couldn't get your location"; }, { enableHighAccuracy: true, timeout: 15000 });
 };
-if (inCo()) requote(); else paint();
+setLang(lang);
+if (inCo()) requote();
 </script>`, { css: SHOP_CSS });
 }
 

@@ -160,6 +160,7 @@ assert.match(sent().at(-1), /Today: <b>1<\/b> orders/);
 const page = await (await W(`/s/${sid}`)).text();
 assert.match(page, /data-i="0"/);
 assert.match(page, /or order on Telegram/);
+assert.ok(page.includes('data-l="kn"') && page.includes("ಆರ್ಡರ್ ಮಾಡಿ") && page.includes('data-t="deliveryAddress"'), "language toggle");
 for (const m of page.matchAll(/<script>([\s\S]*?)<\/script>/g)) new Function(m[1]);
 
 // web order: priced on the server, same shape as Telegram orders, owner alerted with the same buttons
