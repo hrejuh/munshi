@@ -39,6 +39,8 @@ export default {
       return Response.json({ setWebhook: { ok: hook.ok, description: hook.description }, setMyCommands: { ok: cmds.ok, description: cmds.description } });
     }
     if (url.pathname.startsWith("/m/") || url.pathname.startsWith("/api/m/")) return manageRoute(req, env, url, ctx);
+    if (req.method === "POST" && url.pathname.startsWith("/api/order/")) return orderApi(req, env, dec(url.pathname.slice(11)));
+    if (req.method === "GET" && (url.pathname.startsWith("/o/") || url.pathname.startsWith("/api/o/"))) return statusRoute(env, url);
     if (req.method === "GET" && (url.pathname === "/" || url.pathname.startsWith("/s/")))
       return webPage(env, url.pathname === "/" ? null : decodeURIComponent(url.pathname.slice(3)));
     return new Response("not found", { status: 404 });
@@ -193,6 +195,11 @@ function istDayStart() {
 function randChars(chars, k) { let s = ""; for (let i = 0; i < k; i++) s += chars[Math.floor(Math.random() * chars.length)]; return s; }
 const fill = (tpl, vars) => tpl.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m));
 const wordChars = s => s.replace(/[^\p{L}\p{N}_]/gu, "");
+const dec = s => { try { return decodeURIComponent(s); } catch { return ""; } };
+function randCode(k = 8) { // unguessable: the status link is the only thing protecting a web order
+  const A = "abcdefghjkmnpqrstuvwxyz23456789", b = crypto.getRandomValues(new Uint8Array(k));
+  return [...b].map(x => A[x % A.length]).join("");
+}
 
 // ---------- understanding speech and text ----------
 
@@ -817,33 +824,105 @@ async function placeOrder(c, chat, s, phone) {
     s.step = null;
     return send(c, chat, "Your cart is empty.");
   }
-  const subtotal = lines.reduce((a, [it, q]) => a + it.price * q, 0);
   const mode = s.mode || "delivery";
-  const [fee, dist] = mode === "delivery" ? deliveryFee(shop, s.loc) : [0.0, null];
-  const charged = (shop.feeBy || "customer") === "customer" ? fee : 0.0;
-  const total = subtotal + charged;
-  const oid = randChars("0123456789", 5);
+  const oid = await newOrderId(c);
   const order = { shop: sid, buyer: chat, lines: lines.map(([it, q]) => [iname(it), q, it.price]),
-    subtotal, fee, feeCharged: charged, mode, km: dist, loc: s.loc || null,
-    total, address: s.address || "", phone, status: "new", at: now() };
+    ...priceOrder(shop, lines, mode, s.loc), mode, loc: s.loc || null,
+    address: s.address || "", phone, status: "new", at: now() };
   c.st.set(`order:${oid}`, order);
   await addToIndex(c, "index:orders", oid);
   Object.assign(s, { cart: {}, step: null, mode: null, loc: null });
   await save(c);
-  let body = lines.map(([it, q]) => `${q}× ${h(iname(it))} — ${rs(it.price * q)}`).join("\n");
-  const distTxt = dist != null ? ` · ${dist.toFixed(1)} km` : "";
-  if (mode === "delivery") body += `\n🛵 Delivery${distTxt} — ${charged ? rs(charged) : "free"}`;
-  else body += "\n🏃 Pickup from shop";
   const payWhen = mode === "delivery" ? "on delivery" : "at pickup";
   await tg(c, "sendMessage", { chat_id: chat, parse_mode: "HTML", reply_markup: { remove_keyboard: true },
-    text: `🧾 <b>Order #${oid} sent</b>\n\n${body}\n<b>Total ${rs(total)}</b> · pay cash ${payWhen}` });
-  speak(c, chat, `Order ${oid} sent. Total ${rs(total)}, pay cash ${payWhen}.`);
-  await send(c, shop.owner, `🔔 <b>New order #${oid}</b> · ${mode === "delivery" ? "🛵 delivery" : "🏃 pickup"}\n\n${body}` +
-    (mode === "delivery" && !charged ? `\n(you absorb ${rs(fee)} delivery)` : "") +
-    `\n<b>Collect ${rs(total)}</b>\n\n🙋 ${h(order.address)}\n📞 ${h(phone)}` +
-    (order.loc ? `\n🗺 https://maps.google.com/?q=${order.loc[0]},${order.loc[1]}` : ""),
-    [[{ text: "✅ Accept", callback_data: `ok:${oid}` }, { text: "✖ Can't", callback_data: `no:${oid}` }]]);
-  console.log(`ORDER ${oid} shop=${sid} total=${total}`);
+    text: `🧾 <b>Order #${oid} sent</b>\n\n${orderBody(order)}\n<b>Total ${rs(order.total)}</b> · pay cash ${payWhen}` });
+  speak(c, chat, `Order ${oid} sent. Total ${rs(order.total)}, pay cash ${payWhen}.`);
+  await notifyOwner(c, oid, order, shop);
+  console.log(`ORDER ${oid} shop=${sid} total=${order.total}`);
+}
+
+// lines: [[item, qty]] priced from the shop's own items
+function priceOrder(shop, lines, mode, loc) {
+  const subtotal = lines.reduce((a, [it, q]) => a + it.price * q, 0);
+  const [fee, dist] = mode === "delivery" ? deliveryFee(shop, loc) : [0.0, null];
+  const feeCharged = (shop.feeBy || "customer") === "customer" ? fee : 0.0;
+  return { subtotal, fee, feeCharged, km: dist, total: subtotal + feeCharged };
+}
+
+async function newOrderId(c) {
+  let oid;
+  for (let t = 0; t < 5; t++) if (!(await getOrder(c, (oid = randChars("0123456789", 5))))) break;
+  return oid;
+}
+
+function orderBody(o) {
+  let body = o.lines.map(([n, q, p]) => `${q}× ${h(n)} — ${rs(p * q)}`).join("\n");
+  if (o.mode === "delivery") body += `\n🛵 Delivery${o.km != null ? ` · ${o.km.toFixed(1)} km` : ""} — ${o.feeCharged ? rs(o.feeCharged) : "free"}`;
+  else body += "\n🏃 Pickup from shop";
+  return body;
+}
+
+// The owner's Telegram alert, the same for Telegram and web orders.
+async function notifyOwner(c, oid, o, shop) {
+  const who = [o.buyerName, o.address].filter(Boolean).join(", ");
+  return send(c, shop.owner, `🔔 <b>New order #${oid}</b> · ${o.mode === "delivery" ? "🛵 delivery" : "🏃 pickup"}${o.source === "web" ? " · 🌐 web" : ""}\n\n${orderBody(o)}` +
+    (o.mode === "delivery" && !o.feeCharged ? `\n(you absorb ${rs(o.fee)} delivery)` : "") +
+    `\n<b>Collect ${rs(o.total)}</b>\n\n🙋 ${h(who)}\n📞 ${h(o.phone)}` + (o.note ? `\n📝 ${h(o.note)}` : "") +
+    (o.loc ? `\n🗺 https://maps.google.com/?q=${o.loc[0]},${o.loc[1]}` : ""),
+    ownerButtons(oid, o));
+}
+
+function ownerButtons(oid, o) {
+  if (o.status === "new") return [[{ text: "✅ Accept", callback_data: `ok:${oid}` }, { text: "✖ Can't", callback_data: `no:${oid}` }]];
+  return [[{ text: o.status === "declined" ? "✖ Declined" : "✅ Accepted", callback_data: "home" }]];
+}
+
+// ---------- web orders: POST /api/order/<sid>, status at /o/<oid>?c=<code> ----------
+
+async function orderApi(req, env, sid) {
+  const c = { env, st: new Store(env.DB), bg: [] };
+  const json = (o, status = 200) => Response.json(o, { status, headers: { "cache-control": "no-store" } });
+  const shop = sid ? await getShop(c, sid) : null;
+  if (!shop) return json({ error: "Shop not found." }, 404);
+  const raw = await req.text();
+  if (raw.length > 8000) return json({ error: "Order too big." }, 413);
+  let b;
+  try { b = JSON.parse(raw); } catch { return json({ error: "bad request" }, 400); }
+  if (!b || typeof b !== "object") return json({ error: "bad request" }, 400);
+  const lines = [], seen = new Set();
+  for (const l of Array.isArray(b.lines) ? b.lines.slice(0, MAX_ITEMS) : []) {
+    const i = parseInt(l && l.i, 10), q = Number(l && l.q), it = shop.items[i];
+    if (!it || seen.has(i) || String(l.name || "") !== it.name) return json({ error: "The menu changed. Please refresh the page." }, 409);
+    if (!Number.isInteger(q) || q < 1 || q > 99) return json({ error: "Quantity must be 1 to 99." }, 400);
+    seen.add(i);
+    lines.push([it, q]);
+  }
+  if (!lines.length) return json({ error: "Your cart is empty." }, 400);
+  const mode = b.mode === "pickup" ? "pickup" : "delivery";
+  let loc = null;
+  if (mode === "delivery" && Array.isArray(b.loc) && b.loc.length === 2) {
+    const [la, lo] = b.loc.map(Number);
+    if (Number.isFinite(la) && Number.isFinite(lo) && Math.abs(la) <= 90 && Math.abs(lo) <= 180) loc = [la, lo];
+  }
+  const price = priceOrder(shop, lines, mode, loc);
+  if (b.quote) return json(price);
+  const one = (x, n) => String(x || "").replace(/\s+/g, " ").trim().slice(0, n);
+  const name = one(b.name, 60), phone = String(b.phone || "").replace(/[^\d+]/g, "").slice(0, 15);
+  const address = mode === "delivery" ? one(b.address, 200) : "", note = one(b.note, 200);
+  if (!name) return json({ error: "Please add your name." }, 400);
+  if (phone.replace(/\D/g, "").length < 10) return json({ error: "Please add a 10-digit phone number." }, 400);
+  if (mode === "delivery" && address.length < 4) return json({ error: "Please add your delivery address." }, 400);
+  c.bot = await botName(c);
+  const oid = await newOrderId(c), code = randCode();
+  const order = { shop: sid, buyer: null, lines: lines.map(([it, q]) => [iname(it), q, it.price]),
+    ...price, mode, loc, address, phone, status: "new", at: now(),
+    source: "web", buyerName: name, buyerPhone: phone, note, code };
+  c.st.set(`order:${oid}`, order);
+  await addToIndex(c, "index:orders", oid);
+  await save(c);
+  await notifyOwner(c, oid, order, shop);
+  console.log(`ORDER ${oid} shop=${sid} total=${order.total} web`);
+  return json({ ok: true, oid, code, url: `/o/${oid}?c=${code}` });
 }
 
 // ---------- routing ----------
@@ -1063,13 +1142,46 @@ h1{font-size:30px;line-height:1.15;margin:22px 0 4px;letter-spacing:-.01em}
 .price{font-weight:700;color:var(--acc2);white-space:nowrap}
 .go{position:fixed;left:16px;right:16px;bottom:18px;max-width:560px;margin:0 auto;display:block;text-align:center;background:var(--acc);color:#1d1206;font-weight:700;padding:15px;border-radius:14px;text-decoration:none;box-shadow:0 6px 20px rgba(0,0,0,.15)}
 .empty{color:var(--soft);margin-top:30px}
+.alt{display:block;text-align:center;color:var(--soft);font-size:14px;margin-top:18px}
 `;
 
-function pageHtml(title, body) {
+const FORM_CSS = `
+.f{display:grid;gap:8px;margin-top:18px}
+label{font-size:12px;color:var(--soft);letter-spacing:.04em;text-transform:lowercase}
+input,select,textarea{width:100%;font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--acc);border-color:transparent}
+.add{background:none;border:1px dashed var(--line);border-radius:14px;padding:12px;color:var(--soft);font:inherit;cursor:pointer}
+`;
+
+const SHOP_CSS = FORM_CSS + `
+.rt{text-align:right}
+.qty{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:6px}
+.q{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:18px;font-weight:700;cursor:pointer}
+.q.p{background:var(--acc);border-color:var(--acc);color:#1d1206}
+.n{min-width:18px;text-align:center}
+.row:not(.has) .m,.row:not(.has) .n{display:none}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px}
+.seg button{font:inherit;font-weight:600;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;cursor:pointer}
+.seg button.on{border:2px solid var(--acc)}
+.tot{margin-top:18px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px;display:grid;gap:4px}
+.tot div{display:flex;justify-content:space-between;color:var(--soft)}
+.tot div:last-child{color:var(--ink);font-weight:700;font-size:18px;border-top:1px solid var(--line);padding-top:6px;margin-top:2px}
+.err{color:#b4441c;margin-top:12px;min-height:1px}
+.steps{list-style:none;padding:0;margin-top:22px;display:grid;gap:12px}
+.steps li{display:flex;gap:12px;align-items:center;color:var(--soft)}
+.steps li i{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);flex:none;font-style:normal;font-size:13px;display:grid;place-items:center}
+.steps li.d{color:var(--ink);font-weight:600}.steps li.d i{background:var(--acc);border-color:var(--acc);color:#1d1206}
+.note{margin-top:18px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px}
+[hidden]{display:none!important}
+`;
+
+function pageHtml(title, body, o = {}) {
   return new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${h(title)}</title><style>${PAGE_CSS}</style></head><body><main>${body}</main></body></html>`,
-    { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=30" } });
+<title>${h(title)}</title><style>${PAGE_CSS}${o.css || ""}</style></head><body><main>${body}</main></body></html>`,
+    { status: o.status || 200, headers: { "content-type": "text/html; charset=utf-8", "cache-control": o.cache || "public, max-age=30" } });
 }
+
+const jsonForScript = o => JSON.stringify(o).replace(/</g, "\\u003c").replace(/\u2028|\u2029/g, "");
 
 async function webPage(env, sid) {
   const c = { env, st: new Store(env.DB) };
@@ -1083,11 +1195,123 @@ async function webPage(env, sid) {
 <a class="go" href="https://t.me/${c.bot}">Open your shop on Telegram</a>`);
   }
   const sh = await getShop(c, sid);
-  if (!sh) return pageHtml("Not found", `${mark}<h1>Shop not found</h1><p class="sub"><a href="/">All shops</a></p>`);
-  const rows = (sh.items || []).map(it => `<div class="row"><span><b>${h(it.name)}</b>${it.local && it.local !== it.name ? `<small>${h(it.local)}</small>` : ""}</span><span class="price">${rs(it.price)}${it.unit ? `<small style="font-weight:400;color:var(--soft);text-align:right">/ ${h(it.unit)}</small>` : ""}</span></div>`).join("");
-  return pageHtml(sh.shopName, `${mark}<h1>${h(sh.shopName)}</h1><p class="sub">${h(sh.area || "")}</p>
+  if (!sh) return pageHtml("Not found", `${mark}<h1>Shop not found</h1><p class="sub"><a href="/">All shops</a></p>`, { status: 404 });
+  const items = sh.items || [];
+  const rows = items.map((it, i) => `<div class="row" data-i="${i}"><span><b>${h(it.name)}</b>${it.local && it.local !== it.name ? `<small>${h(it.local)}</small>` : ""}</span><span class="rt"><span class="price">${rs(it.price)}${it.unit ? `<small style="font-weight:400;color:var(--soft)">/ ${h(it.unit)}</small>` : ""}</span><span class="qty"><button class="q m" aria-label="one less">−</button><b class="n">0</b><button class="q p" aria-label="one more">+</button></span></span></div>`).join("");
+  const tel = sh.phone ? ` · <a href="tel:${h(sh.phone)}" style="color:inherit">📞 ${h(sh.phone)}</a>` : "";
+  return pageHtml(sh.shopName, `${mark}<section id="shop"><h1>${h(sh.shopName)}</h1><p class="sub">${h(sh.area || "")}${tel}</p>
 <div class="list">${rows || `<p class="empty">Menu coming soon.</p>`}</div>
-<a class="go" href="${shopLink(c, sid)}">Order on Telegram</a>`);
+<a class="alt" href="${shopLink(c, sid)}">or order on Telegram →</a></section>
+<section id="co" hidden><a class="alt" href="#" id="back" style="text-align:left;margin:0">← back</a><h1>Your order</h1>
+<div class="list" id="lines"></div>
+<div class="seg"><button type="button" data-m="delivery" class="on">🛵 Delivery</button><button type="button" data-m="pickup">🏃 Pickup</button></div>
+<div class="f"><label>name</label><input id="bn" maxlength="60" autocomplete="name">
+<label>phone</label><input id="bp" maxlength="15" inputmode="tel" autocomplete="tel">
+<div id="dl" class="f" style="margin:0"><label>delivery address</label><textarea id="ba" maxlength="200" rows="2" autocomplete="street-address"></textarea>
+<button type="button" class="add" id="gl">📍 use my location</button></div>
+<label>note for the shop</label><input id="bt" maxlength="200" placeholder="optional"></div>
+<div class="tot" id="tot"></div><p class="err" id="err"></p>
+<p class="sub" style="text-align:center;margin-top:8px">Pay cash on delivery or pickup</p></section>
+<a class="go" id="bar" href="#" hidden></a>
+<script>
+const SID = ${jsonForScript(sid)}, ITEMS = ${jsonForScript(items.map(it => ({ n: it.name, l: iname(it), p: it.price })))}, KEY = "munshi-cart-" + SID;
+const $ = id => document.getElementById(id), rs = n => "₹" + Number(n).toLocaleString("en-IN", { maximumFractionDigits: 2 });
+let cart = {}, mode = "delivery", loc = null, quote = null, busy = false, qseq = 0;
+try { cart = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch {}
+for (const k in cart) if (!ITEMS[k] || ITEMS[k].n !== cart[k].n || !(cart[k].q > 0)) delete cart[k];
+try { const b = JSON.parse(localStorage.getItem("munshi-buyer") || "{}"); $("bn").value = b.n || ""; $("bp").value = b.p || ""; $("ba").value = b.a || ""; } catch {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(cart)); } catch {} };
+const count = () => Object.values(cart).reduce((a, x) => a + x.q, 0);
+const sub = () => Object.entries(cart).reduce((a, [i, x]) => a + ITEMS[i].p * x.q, 0);
+const inCo = () => location.hash === "#checkout" && count() > 0;
+function setQ(i, q) { q = Math.max(0, Math.min(99, q)); if (q) cart[i] = { n: ITEMS[i].n, q }; else delete cart[i]; save(); paint(); }
+document.querySelectorAll(".row[data-i]").forEach(r => {
+  const i = r.dataset.i;
+  r.querySelector(".p").onclick = () => setQ(i, ((cart[i] || {}).q || 0) + 1);
+  r.querySelector(".m").onclick = () => setQ(i, ((cart[i] || {}).q || 0) - 1);
+});
+function paint() {
+  document.querySelectorAll(".row[data-i]").forEach(r => { const q = (cart[r.dataset.i] || {}).q || 0; r.classList.toggle("has", q > 0); r.querySelector(".n").textContent = q; });
+  const n = count(), co = inCo();
+  $("shop").hidden = co; $("co").hidden = !co; $("bar").hidden = !n;
+  if (!co) { $("bar").textContent = n + (n > 1 ? " items" : " item") + " · " + rs(sub()) + "  →"; return; }
+  $("bar").textContent = busy ? "Placing…" : "Place order · " + rs(quote ? quote.total : sub());
+  $("lines").innerHTML = "";
+  for (const [i, x] of Object.entries(cart)) {
+    const d = document.createElement("div"); d.className = "row";
+    d.innerHTML = "<span></span><span class=price></span>";
+    d.firstChild.textContent = x.q + " × " + ITEMS[i].l; d.lastChild.textContent = rs(ITEMS[i].p * x.q);
+    $("lines").appendChild(d);
+  }
+  $("dl").hidden = mode !== "delivery";
+  document.querySelectorAll(".seg button").forEach(b => b.classList.toggle("on", b.dataset.m === mode));
+  const t = quote || { subtotal: sub(), feeCharged: 0, total: sub() };
+  $("tot").innerHTML = "<div><span>items</span><span>" + rs(t.subtotal) + "</span></div>" +
+    (mode === "delivery" ? "<div><span>delivery" + (t.km != null ? " · " + t.km.toFixed(1) + " km" : "") + "</span><span>" + (t.feeCharged ? rs(t.feeCharged) : "free") + "</span></div>" : "") +
+    "<div><span>total</span><span>" + rs(t.total) + "</span></div>";
+}
+function body(extra) {
+  return JSON.stringify(Object.assign({ lines: Object.entries(cart).map(([i, x]) => ({ i: +i, name: x.n, q: x.q })), mode, loc,
+    name: $("bn").value, phone: $("bp").value, address: $("ba").value, note: $("bt").value }, extra));
+}
+const post = async extra => (await fetch("/api/order/" + encodeURIComponent(SID), { method: "POST", headers: { "content-type": "application/json" }, body: body(extra) })).json();
+async function requote() {
+  const my = ++qseq; quote = null; paint();
+  try { const r = await post({ quote: true }); if (my === qseq && !r.error) { quote = r; paint(); } else if (r.error) $("err").textContent = r.error; } catch {}
+}
+async function place() {
+  if (busy) return;
+  busy = true; $("err").textContent = ""; paint();
+  try {
+    const r = await post({});
+    if (r.error) throw new Error(r.error);
+    try { localStorage.removeItem(KEY); localStorage.setItem("munshi-buyer", JSON.stringify({ n: $("bn").value, p: $("bp").value, a: $("ba").value })); } catch {}
+    return location.replace(r.url);
+  } catch (e) { $("err").textContent = e.message && !/fetch/i.test(e.message) ? e.message : "Couldn't place the order. Try again."; }
+  busy = false; paint();
+}
+$("bar").onclick = e => { e.preventDefault(); if (inCo()) place(); else location.hash = "checkout"; };
+$("back").onclick = e => { e.preventDefault(); history.back(); };
+window.onhashchange = () => { scrollTo(0, 0); if (inCo()) requote(); else paint(); };
+document.querySelectorAll(".seg button").forEach(b => b.onclick = () => { mode = b.dataset.m; requote(); });
+$("gl").onclick = () => {
+  if (!navigator.geolocation) return;
+  $("gl").textContent = "📍 finding you…";
+  navigator.geolocation.getCurrentPosition(p => { loc = [p.coords.latitude, p.coords.longitude]; $("gl").textContent = "📍 location added ✓"; requote(); },
+    () => { $("gl").textContent = "📍 couldn't get your location"; }, { enableHighAccuracy: true, timeout: 15000 });
+};
+if (inCo()) requote(); else paint();
+</script>`, { css: SHOP_CSS });
+}
+
+async function statusRoute(env, url) {
+  const api = url.pathname.startsWith("/api/");
+  const oid = url.pathname.split("/").pop();
+  const c = { env, st: new Store(env.DB) };
+  const o = /^\d{1,10}$/.test(oid) ? await getOrder(c, oid) : null;
+  // the code is the only key to a web order; a wrong code looks exactly like a missing order
+  if (!o || !o.code || (url.searchParams.get("c") || "") !== o.code) {
+    return api ? Response.json({ error: "not found" }, { status: 404, headers: { "cache-control": "no-store" } })
+      : pageHtml("Not found", `<span class="mark"><i></i>munshi</span><h1>Order not found</h1>`, { status: 404, cache: "no-store" });
+  }
+  if (api) return Response.json({ status: o.status }, { headers: { "cache-control": "no-store" } });
+  const sh = (await getShop(c, o.shop)) || {};
+  const dlv = o.mode === "delivery";
+  const steps = [["new", "Order placed"], ["accepted", "Accepted by the shop"], ["out", dlv ? "Out for delivery" : "Ready for pickup"], ["completed", "Completed"]];
+  const at = Math.max(0, steps.findIndex(x => x[0] === o.status));
+  const live = !["completed", "declined"].includes(o.status);
+  const track = o.status === "declined" ? `<p class="note">✖ The shop couldn't take this order.${sh.phone ? " Please call them." : ""}</p>`
+    : `<ol class="steps">${steps.map(([, label], i) => `<li class="${i <= at ? "d" : ""}"><i>${i <= at ? "✓" : ""}</i>${label}</li>`).join("")}</ol>`;
+  const lines = o.lines.map(([n, q, p]) => `<div><span>${q} × ${h(n)}</span><span>${rs(p * q)}</span></div>`).join("");
+  return pageHtml(`Order #${oid}`, `<a class="mark" href="/s/${encodeURIComponent(o.shop)}" style="text-decoration:none"><i></i>${h(sh.shopName || "munshi")}</a>
+<h1>Order #${h(oid)}</h1><p class="sub">${dlv ? "🛵 Delivery" : "🏃 Pickup from shop"}${live ? ` · pay ${rs(o.total)} cash ${dlv ? "on delivery" : "at pickup"}` : ""}</p>
+${track}
+<div class="tot">${lines}${dlv ? `<div><span>delivery</span><span>${o.feeCharged ? rs(o.feeCharged) : "free"}</span></div>` : ""}<div><span>total</span><span>${rs(o.total)}</span></div></div>
+${sh.phone ? `<a class="alt" href="tel:${h(sh.phone)}">📞 call the shop</a>` : ""}
+<a class="alt" href="/s/${encodeURIComponent(o.shop)}">back to the shop</a>
+${live ? `<script>const S0 = ${jsonForScript(o.status)};
+const t = setInterval(async () => { try { const r = await (await fetch("/api/o/${h(oid)}" + location.search, { cache: "no-store" })).json(); if (r.status && r.status !== S0) { clearInterval(t); location.reload(); } } catch {} }, 10000);</script>` : ""}`,
+    { css: SHOP_CSS, cache: "no-store" });
 }
 
 // ---------- owner web dashboard: /m/<sid>?k=<signed key> ----------
@@ -1191,16 +1415,11 @@ async function manageRoute(req, env, url, ctx) {
 }
 
 function managePage(sid, shop) {
-  const css = PAGE_CSS + `
-.f{display:grid;gap:8px;margin-top:18px}
-label{font-size:12px;color:var(--soft);letter-spacing:.04em;text-transform:lowercase}
-input,select{width:100%;font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
-input:focus{outline:2px solid var(--acc);border-color:transparent}
+  const css = PAGE_CSS + FORM_CSS + `
 .it{display:grid;grid-template-columns:1fr 84px 32px;gap:6px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px}
 .it .sub2{grid-column:1/3;display:grid;grid-template-columns:1fr 84px;gap:6px}
 .it input{padding:8px 10px;font-size:15px}
 .x{background:none;border:0;color:var(--soft);font-size:20px;cursor:pointer}
-.add{background:none;border:1px dashed var(--line);border-radius:14px;padding:12px;color:var(--soft);font:inherit;cursor:pointer}
 .bar{position:fixed;left:0;right:0;bottom:0;padding:12px 16px 18px;background:linear-gradient(transparent,var(--bg) 30%)}
 .bar div{max-width:560px;margin:0 auto;display:flex;gap:10px;align-items:center}
 .save{flex:1;border:0;background:var(--acc);color:#1d1206;font:inherit;font-weight:700;padding:15px;border-radius:14px;cursor:pointer}

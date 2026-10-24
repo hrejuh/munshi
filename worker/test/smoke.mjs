@@ -146,6 +146,57 @@ assert.ok(tplRes.items.every(i => i.name && i.price > 0) && /[\u0900-\u097F]/.te
 await post(msg(OWNER, { text: "/sales" }));
 assert.match(sent().at(-1), /Today: <b>1<\/b> orders/);
 
+// public shop page: cart + checkout script that at least parses
+const page = await (await W(`/s/${sid}`)).text();
+assert.match(page, /data-i="0"/);
+assert.match(page, /or order on Telegram/);
+for (const m of page.matchAll(/<script>([\s\S]*?)<\/script>/g)) new Function(m[1]);
+
+// web order: priced on the server, same shape as Telegram orders, owner alerted with the same buttons
+const order$ = body => W(`/api/order/${sid}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+const base = { lines: [{ i: 0, name: "Tea", q: 2, price: 1 }, { i: 1, name: "Samosa", q: 1 }], mode: "delivery",
+  name: "Meena <b>", phone: "98450 12345", address: "4th cross, Jayanagar", note: "ring twice", total: 1 };
+const quote = await (await order$({ ...base, quote: true })).json();
+assert.deepEqual([quote.subtotal, quote.feeCharged, quote.total], [44, 52, 96], "quote ignores client prices");
+assert.equal((await order$({ ...base, lines: [{ i: 0, name: "Coffee", q: 1 }] })).status, 409, "menu changed");
+assert.equal((await order$({ ...base, lines: [{ i: 0, name: "Tea", q: 0 }] })).status, 400, "bad qty");
+assert.equal((await order$({ ...base, phone: "12" })).status, 400, "bad phone");
+assert.equal((await order$({ ...base, address: "" })).status, 400, "delivery needs address");
+assert.equal((await W(`/api/order/nosuchshop`, { method: "POST", body: "{}" })).status, 404);
+const nIdx = JSON.parse(kv.get("index:orders")).length;
+const b3 = calls.length;
+const placed = await (await order$({ ...base, loc: [12.95, 77.6] })).json();
+assert.ok(placed.ok && /^\d{5}$/.test(placed.oid) && placed.code.length >= 8 && placed.url === `/o/${placed.oid}?c=${placed.code}`);
+const wo = JSON.parse(kv.get(`order:${placed.oid}`));
+assert.equal(JSON.parse(kv.get("index:orders")).length, nIdx + 1);
+assert.deepEqual(wo.lines, [["चाय", 2, 12], ["Samosa", 1, 20]]);
+assert.equal(wo.subtotal, 44);
+assert.equal(wo.total, wo.subtotal + wo.feeCharged);
+assert.ok(wo.km > 0);
+for (const k of ["shop", "lines", "total", "status", "at", "mode", "fee", "feeCharged", "address", "phone"]) assert.ok(k in wo, k);
+assert.deepEqual([wo.source, wo.buyerName, wo.buyerPhone, wo.status, wo.note], ["web", "Meena <b>", "9845012345", "new", "ring twice"]);
+const alert = calls.slice(b3).find(c => c.url.endsWith("/sendMessage") && c.body.chat_id === OWNER);
+assert.ok(alert, "owner alerted");
+assert.match(alert.body.text, new RegExp(`New order #${placed.oid}.*web`));
+assert.match(alert.body.text, /Meena &lt;b&gt;, 4th cross/);
+assert.deepEqual(alert.body.reply_markup.inline_keyboard[0].map(b => b.callback_data), [`ok:${placed.oid}`, `no:${placed.oid}`]);
+const pick = await (await order$({ ...base, mode: "pickup", address: "" })).json();
+assert.ok(pick.ok);
+assert.equal(JSON.parse(kv.get(`order:${pick.oid}`)).total, 44, "pickup: no fee");
+
+// status page: needs the code; never shows the buyer's phone or address
+const sp = await W(placed.url);
+assert.equal(sp.status, 200);
+const spText = await sp.text();
+assert.match(spText, new RegExp(`Order #${placed.oid}`));
+assert.ok(!spText.includes("9845012345") && !spText.includes("4th cross") && !spText.includes("Meena"), "no buyer details");
+for (const m of spText.matchAll(/<script>([\s\S]*?)<\/script>/g)) new Function(m[1]);
+assert.equal((await W(`/o/${placed.oid}?c=wrongcode`)).status, 404);
+assert.equal((await W(`/o/${placed.oid}`)).status, 404);
+assert.equal((await W(`/o/${oid}?c=`)).status, 404, "telegram orders have no status page");
+assert.deepEqual(await (await W(`/api/o/${placed.oid}?c=${placed.code}`)).json(), { status: "new" });
+assert.equal((await W(`/api/o/${placed.oid}?c=nope`)).status, 404);
+
 console.log = origLog;
 assert.deepEqual(errors, [], "no errors logged");
 console.log(`ok: ${calls.length} stubbed calls, shop ${sid}, order #${oid} total ${order.total}`);
