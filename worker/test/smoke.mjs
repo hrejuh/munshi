@@ -46,7 +46,7 @@ globalThis.fetch = async (url, init = {}) => {
     else out = { add: [{ index: 1, qty: 2 }], remove: [], checkout: true, reply: "2 samosa added. Name and address?" };
     return json({ choices: [{ message: { content: JSON.stringify(out) } }] });
   }
-  if (url.includes("control.msg91.com/api/v5/widget/verifyAccessToken")) return json(msg91Reply);
+  if (url.includes("api.msg91.com/api/v5/widget/verifyAccessToken")) return json(msg91Reply);
   if (url.includes("telegra.ph")) return json({ ok: true, result: { url: "https://telegra.ph/Ravi-Stores-10-24" } });
   throw new Error("unexpected fetch " + url);
 };

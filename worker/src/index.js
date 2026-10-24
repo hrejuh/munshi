@@ -2063,9 +2063,9 @@ const say = t => { $("msg").textContent = t; $("msg").hidden = !t; };
 const reason = e => typeof e === "string" ? e : (e && e.message) || "";
 let ready = false, phone = "";
 const s = document.createElement("script");
-s.src = "https://control.msg91.com/app/assets/otp-provider/otp-provider.js";
+s.src = "https://verify.msg91.com/otp-provider.js";
 s.async = true;
-s.onerror = () => say("Could not load the code service.");
+s.onerror = () => { if (s.src.includes("verify.")) { s.src = "https://control.msg91.com/app/assets/otp-provider/otp-provider.js"; document.head.appendChild(s); } else say("Could not load the code service."); };
 s.onload = () => setTimeout(() => {
   try { window.initSendOTP({ widgetId: W, tokenAuth: T, exposeMethods: true, success() {}, failure() {} }); } catch (e) {}
   let n = 0;
@@ -2115,7 +2115,7 @@ $("cf").onsubmit = e => {
 
 async function loginApi(req, env) {
   const json = (o, status = 200) => Response.json(o, { status, headers: { "cache-control": "no-store" } });
-  if (!env.MSG91_AUTH_KEY) return json({ error: "Login by phone is not set up yet." }, 503);
+  if (!env.MSG91_AUTH_KEY && !env.MSG91_TOKEN_AUTH) return json({ error: "Login by phone is not set up yet." }, 503);
   if (loginLimited(req)) return json({ error: "Too many tries. Wait a few minutes." }, 429);
   let b;
   try { b = await req.json(); } catch { return json({ error: "bad request" }, 400); }
@@ -2123,9 +2123,10 @@ async function loginApi(req, env) {
   if (phone.length !== 10 || !token || token.length > 4000) return json({ error: "Enter your number and the code." }, 400);
   let data = null;
   try {
-    const r = await fetch("https://control.msg91.com/api/v5/widget/verifyAccessToken", {
-      method: "POST", headers: { "content-type": "application/json", accept: "application/json" },
-      body: JSON.stringify({ authkey: env.MSG91_AUTH_KEY, "access-token": token }),
+    // docs.msg91.com/otp-widget/verify-access-token: the verified mobile comes back in "message"
+    const r = await fetch("https://api.msg91.com/api/v5/widget/verifyAccessToken", {
+      method: "POST", headers: { "content-type": "application/json", accept: "application/json", ...(env.MSG91_AUTH_KEY ? { authkey: env.MSG91_AUTH_KEY } : {}) },
+      body: JSON.stringify(env.MSG91_AUTH_KEY ? { "access-token": token } : { "access-token": token, tokenAuth: env.MSG91_TOKEN_AUTH }),
     });
     data = await r.json();
   } catch { data = null; }
